@@ -1,0 +1,51 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Backend
+backend/vendor/
+backend/node_modules/
+backend/.env
+backend/.env.testing
+backend/storage/logs/
+backend/storage/app/
+backend/bootstrap/cache/
+backend/.phpunit.result.cache
+backend/composer.lock
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/yarn.lock
+frontend/package-lock.json
+
+# Database
+*.sqlite
+*.sqlite3
+database.sqlite
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.log
+*.tmp
+.cache/
+
+# UI images/mockups (optional - uncomment to exclude)
+# ui images/
+
+# Documentation build output
+docs/_build/
+docs/.jekyll-cache/
