@@ -63,13 +63,36 @@
         </div>
       </div>
 
+      <!-- Financial Summary -->
+      <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <h3 class="font-bold text-sm text-slate-900">الملخص المالي (هذا الشهر)</h3>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+            <p class="text-[10px] text-slate-500">إجمالي الحجوزات</p>
+            <p class="text-xl font-black text-slate-900 font-mono mt-1">{{ formatCurrency(financials.totalBookings) }}</p>
+          </div>
+          <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+            <p class="text-[10px] text-slate-500">إجمالي الاستردادات</p>
+            <p class="text-xl font-black text-red-600 font-mono mt-1">{{ formatCurrency(financials.totalRefunds) }}</p>
+          </div>
+          <div class="bg-[#0f172a] rounded-2xl p-4">
+            <p class="text-[10px] text-slate-400">صافي الإيرادات</p>
+            <p class="text-xl font-black text-emerald-400 font-mono mt-1">{{ formatCurrency(financials.totalBookings - financials.totalRefunds) }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Quick Actions -->
       <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
         <h3 class="font-bold text-sm text-slate-900 mb-4">إجراءات سريعة</h3>
-        <div class="grid grid-cols-3 gap-3">
+        <div class="grid grid-cols-4 gap-3">
           <router-link to="/admin/orders" class="bg-[#0f172a] hover:bg-slate-800 text-white p-4 rounded-2xl text-center text-xs font-bold transition flex flex-col items-center gap-2">
             <ClipboardList class="w-5 h-5 text-amber-400" />
             عرض الطلبات
+          </router-link>
+          <router-link to="/admin/refunds" class="bg-[#0f172a] hover:bg-slate-800 text-white p-4 rounded-2xl text-center text-xs font-bold transition flex flex-col items-center gap-2">
+            <RotateCcw class="w-5 h-5 text-red-400" />
+            طلبات الاسترداد
           </router-link>
           <router-link to="/admin/wallet/topup" class="bg-[#0f172a] hover:bg-slate-800 text-white p-4 rounded-2xl text-center text-xs font-bold transition flex flex-col items-center gap-2">
             <Wallet class="w-5 h-5 text-emerald-400" />
@@ -127,6 +150,7 @@ import { RefreshCw, ClipboardList, RotateCcw, Wallet, TrendingUp, Users } from '
 
 const loading = ref(true)
 const stats = ref({ pendingOrders: 0, pendingRefunds: 0, pendingTopups: 0, totalBalance: 0 })
+const financials = ref({ totalBookings: 0, totalRefunds: 0 })
 const recentOrders = ref([])
 
 const loadData = async () => {
@@ -134,6 +158,7 @@ const loadData = async () => {
   try {
     const response = await api.get('/admin/dashboard')
     stats.value = response.data.stats
+    financials.value = response.data.financials
     recentOrders.value = response.data.recentOrders
   } catch (err) {
     console.error('Failed to load dashboard', err)

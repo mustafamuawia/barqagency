@@ -4,7 +4,8 @@ import { useAuthStore } from '@/stores/auth'
 const routes = [
   {
     path: '/',
-    redirect: '/login',
+    component: () => import('@/views/LandingPage.vue'),
+    meta: { public: true },
   },
   {
     path: '/login',
@@ -21,6 +22,8 @@ const routes = [
       { path: 'orders/:id/price', name: 'admin.orders.price', component: () => import('@/views/admin/PricingForm.vue'), props: true },
       { path: 'agencies', name: 'admin.agencies', component: () => import('@/views/admin/AgencyList.vue') },
       { path: 'wallet/topup', name: 'admin.wallet.topup', component: () => import('@/views/admin/WalletTopUp.vue') },
+      { path: 'refunds', name: 'admin.refunds', component: () => import('@/views/admin/RefundQueue.vue') },
+      { path: 'refunds/:id', name: 'admin.refunds.review', component: () => import('@/views/admin/RefundReview.vue'), props: true },
     ],
   },
   {
@@ -33,6 +36,8 @@ const routes = [
       { path: 'orders/new', name: 'agency.orders.new', component: () => import('@/views/agency/OrderForm.vue') },
       { path: 'orders/:id', name: 'agency.orders.show', component: () => import('@/views/agency/OrderDetail.vue'), props: true },
       { path: 'wallet', name: 'agency.wallet', component: () => import('@/views/agency/WalletDashboard.vue') },
+      { path: 'refunds', name: 'agency.refunds', component: () => import('@/views/agency/RefundList.vue') },
+      { path: 'refunds/new', name: 'agency.refunds.new', component: () => import('@/views/agency/RefundForm.vue') },
     ],
   },
 ]

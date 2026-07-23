@@ -76,6 +76,16 @@
           </router-link>
 
           <router-link
+            to="/admin/refunds"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
+            :class="$route.path.startsWith('/admin/refunds') ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+            @click="closeSidebar"
+          >
+            <RotateCcw class="w-4 h-4 text-red-400" />
+            <span>طلبات الاسترداد</span>
+          </router-link>
+
+          <router-link
             to="/admin/agencies"
             class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
             :class="$route.path === '/admin/agencies' ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
@@ -160,7 +170,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
   Menu, X, ShieldCheck, LayoutDashboard, Ticket, Wallet, Users,
-  Settings, ShieldAlert, LogOut, PlaneTakeoff, Shield
+  Settings, ShieldAlert, LogOut, PlaneTakeoff, Shield, RotateCcw
 } from 'lucide-vue-next'
 
 const router = useRouter()

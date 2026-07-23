@@ -100,6 +100,15 @@
             <CheckCircle class="w-4 h-4" />
             {{ approving ? 'جارٍ المعالجة...' : 'موافقة وتأكيد الحجز' }}
           </button>
+
+          <router-link
+            v-if="['approved', 'confirmed'].includes(order.status?.name)"
+            :to="`/agency/refunds/new?order_id=${order.id}`"
+            class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-300 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition"
+          >
+            <RotateCcw class="w-4 h-4" />
+            طلب استرداد لهذا الحجز
+          </router-link>
         </div>
 
         <div v-else class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex items-center justify-center text-slate-400 text-sm">
@@ -115,7 +124,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/lib/api'
-import { ArrowRight, CheckCircle } from 'lucide-vue-next'
+import { ArrowRight, CheckCircle, RotateCcw } from 'lucide-vue-next'
 
 const props = defineProps({ id: [String, Number] })
 
