@@ -44,7 +44,7 @@ Thumbs.db
 .cache/
 
 # UI images/mockups (optional - uncomment to exclude)
-# ui images/
+ui images/
 
 # Documentation build output
 docs/_build/
