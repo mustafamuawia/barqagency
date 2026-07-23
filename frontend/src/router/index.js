@@ -13,6 +13,16 @@ const routes = [
     meta: { public: true },
   },
   {
+    path: '/forgot-password',
+    component: () => import('@/views/ForgotPasswordPage.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/reset-password',
+    component: () => import('@/views/ResetPasswordPage.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/admin',
     component: () => import('@/layouts/AdminLayout.vue'),
     meta: { requireRole: 'admin' },
@@ -24,6 +34,7 @@ const routes = [
       { path: 'wallet/topup', name: 'admin.wallet.topup', component: () => import('@/views/admin/WalletTopUp.vue') },
       { path: 'refunds', name: 'admin.refunds', component: () => import('@/views/admin/RefundQueue.vue') },
       { path: 'refunds/:id', name: 'admin.refunds.review', component: () => import('@/views/admin/RefundReview.vue'), props: true },
+      { path: 'reports', name: 'admin.reports', component: () => import('@/views/admin/Reports.vue') },
     ],
   },
   {
@@ -38,6 +49,7 @@ const routes = [
       { path: 'wallet', name: 'agency.wallet', component: () => import('@/views/agency/WalletDashboard.vue') },
       { path: 'refunds', name: 'agency.refunds', component: () => import('@/views/agency/RefundList.vue') },
       { path: 'refunds/new', name: 'agency.refunds.new', component: () => import('@/views/agency/RefundForm.vue') },
+      { path: 'reports', name: 'agency.reports', component: () => import('@/views/agency/Reports.vue') },
     ],
   },
 ]

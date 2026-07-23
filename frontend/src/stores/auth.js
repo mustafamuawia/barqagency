@@ -46,6 +46,35 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const forgotPassword = async (email) => {
+    try {
+      const response = await api.post('/forgot-password', { email })
+      return { success: true, message: response.data.message }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'تعذر إرسال طلب إعادة التعيين',
+      }
+    }
+  }
+
+  const resetPassword = async (token, email, password, passwordConfirmation) => {
+    try {
+      const response = await api.post('/reset-password', {
+        token,
+        email,
+        password,
+        password_confirmation: passwordConfirmation,
+      })
+      return { success: true, message: response.data.message }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'تعذرت إعادة تعيين كلمة المرور',
+      }
+    }
+  }
+
   const isSuperAdmin = computed(() => user.value?.user_type === 'super_admin')
   const isAdmin = computed(() => ['super_admin', 'admin'].includes(user.value?.user_type))
   const isAgency = computed(() => user.value?.user_type === 'b2b')
@@ -60,5 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     fetchCurrentUser,
+    forgotPassword,
+    resetPassword,
   }
 })

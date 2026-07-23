@@ -40,6 +40,7 @@
               <th class="p-3 font-semibold">المبلغ الأصلي</th>
               <th class="p-3 font-semibold">صافي الاسترداد</th>
               <th class="p-3 font-semibold">الحالة</th>
+              <th class="p-3 font-semibold">إجراءات</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -56,6 +57,18 @@
                   {{ statusLabel(refund.status?.name) }}
                 </span>
               </td>
+              <td class="p-3">
+                <button
+                  v-if="refund.status?.name === 'credited'"
+                  @click="downloadCreditNote(refund)"
+                  :disabled="downloadingId === refund.id"
+                  class="bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-[10px] flex items-center gap-1.5 transition"
+                >
+                  <FileText class="w-3.5 h-3.5" />
+                  {{ downloadingId === refund.id ? 'جارٍ...' : 'سند الاسترداد' }}
+                </button>
+                <span v-else class="text-slate-300">—</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -67,10 +80,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/lib/api'
-import { PlusCircle } from 'lucide-vue-next'
+import { downloadFile } from '@/lib/download'
+import { PlusCircle, FileText } from 'lucide-vue-next'
 
 const refunds = ref([])
 const loading = ref(true)
+const downloadingId = ref(null)
 
 onMounted(async () => {
   try {
@@ -99,6 +114,18 @@ const statusLabel = (status) => {
     rejected: 'مرفوض',
   }
   return labels[status] || status
+}
+
+const downloadCreditNote = async (refund) => {
+  downloadingId.value = refund.id
+  try {
+    const response = await api.get(`/refunds/${refund.id}/credit-note`, { responseType: 'blob' })
+    downloadFile(response.data, `credit-note-${refund.refund_number}.pdf`)
+  } catch (err) {
+    console.error('Failed to download credit note', err)
+  } finally {
+    downloadingId.value = null
+  }
 }
 
 const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)

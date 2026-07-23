@@ -95,6 +95,10 @@
             >
               {{ loading ? 'جارٍ تسجيل الدخول...' : 'دخول لوحة التحكم B2B' }}
             </button>
+
+            <router-link to="/forgot-password" class="block text-xs text-amber-600 font-bold hover:underline">
+              نسيت كلمة المرور؟
+            </router-link>
           </form>
 
         </div>

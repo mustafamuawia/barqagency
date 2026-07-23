@@ -57,9 +57,6 @@ Every business table includes these columns (managed via Traits):
 id BIGINT UNSIGNED AUTO_INCREMENT  -- Internal PK for joins
 uuid CHAR(36) UNIQUE                -- Public identifier for APIs
 
--- Multi-tenancy (ready for future)
-tenant_id BIGINT UNSIGNED NULL      -- For future multi-company
-
 -- Status
 status FK → *_statuses             -- Normalized status values
 
@@ -79,7 +76,6 @@ metadata JSON NULL                  -- Future extensibility
 
 **Why These Columns?**
 - `id` + `uuid`: Fast joins internally, safe external IDs
-- `tenant_id`: Ready for multi-company without painful migration
 - `status` FK: Extensible without code changes
 - Audit columns: Full accountability & compliance
 - Soft delete: Preserves financial integrity
@@ -758,25 +754,6 @@ CREATE TABLE failed_jobs (
 
 ---
 
-#### `tenants`
-Multi-company support (ready for future).
-
-```sql
-CREATE TABLE tenants (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(50) UNIQUE,
-    name VARCHAR(255),
-    domain VARCHAR(255) NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    -- Standard columns
-    ...
-);
-```
-
-**Purpose:** All tables with `tenant_id` can support multiple companies without schema changes.
-
----
-
 ## Index Strategy
 
 ### Foreign Key Indexes
@@ -900,7 +877,6 @@ The schema is designed to accommodate:
 | Mobile APIs | `uuid` + `personal_access_tokens` (Sanctum) |
 | Multi-language | `name/name_en` in references, `translations` table |
 | Multi-currency | `currency_id` on agencies, wallets, invoices |
-| Multi-company | `tenant_id` on all tables |
 
 ---
 

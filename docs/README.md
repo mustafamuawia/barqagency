@@ -90,7 +90,18 @@ This folder contains all documentation for the Advanced Travel Management Platfo
 
 ---
 
-### 4. [../SRS-Document-English.pdf](../SRS-Document-English.pdf) - **REQUIREMENTS** 📄
+### 4. [ARCHITECTURE.md](ARCHITECTURE.md) - **BACKEND STRUCTURE** 🏗️
+**Duration:** 10 minutes
+**Best for:** Developers working in the Laravel backend
+
+- Current (not aspirational) layered/domain structure of `backend/app/`
+- Responsibility of each layer: Controllers, Requests, DTOs, Services, Exceptions, Resources, Traits, Helpers
+- When a DTO is created vs. a scalar passed straight through
+- Enums decision and API versioning (`/api/v1`)
+
+---
+
+### 5. [../SRS-Document-English.pdf](../SRS-Document-English.pdf) - **REQUIREMENTS** 📄
 **Duration:** Read once, reference frequently  
 **Best for:** Understanding business requirements and constraints
 
@@ -203,20 +214,20 @@ Vue 3 + Vite
 /agency/reports                 Financial reports
 ```
 
-### API Routes (`/api`)
-All API endpoints are RESTful:
+### API Routes (`/api/v1`)
+All API endpoints are RESTful, versioned under `/api/v1`. See [ARCHITECTURE.md](ARCHITECTURE.md) for how the backend code behind them is organized:
 ```
-POST   /api/login                Login (returns token)
-GET    /api/user                 Current user info
-GET    /api/orders               List orders
-POST   /api/orders               Create order
-GET    /api/orders/:id           Order details
-PUT    /api/orders/:id/quote     Price & send offer
-PUT    /api/orders/:id/approve   Approve booking
-GET    /api/wallets/:id          Wallet details
-POST   /api/wallets/:id/topup    Top-up wallet
-GET    /api/refunds              Pending refunds
-POST   /api/refunds/:id/approve  Approve refund
+POST   /api/v1/login                Login (returns token)
+GET    /api/v1/user                 Current user info
+GET    /api/v1/orders               List orders
+POST   /api/v1/orders               Create order
+GET    /api/v1/orders/:id           Order details
+PUT    /api/v1/orders/:id/quote     Price & send offer
+PUT    /api/v1/orders/:id/approve   Approve booking
+GET    /api/v1/wallets/:id          Wallet details
+POST   /api/v1/wallets/:id/topup    Top-up wallet
+GET    /api/v1/refunds              Pending refunds
+POST   /api/v1/refunds/:id/approve  Approve refund
 ```
 
 ---

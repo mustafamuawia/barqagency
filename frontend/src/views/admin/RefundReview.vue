@@ -94,6 +94,15 @@
             رفض الطلب
           </button>
         </div>
+        <button
+          v-else-if="refund.status?.name === 'credited'"
+          @click="downloadCreditNote"
+          :disabled="downloadingNote"
+          class="w-full bg-[#0f172a] hover:bg-[#1e293b] disabled:opacity-50 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition"
+        >
+          <FileText class="w-4 h-4 text-amber-400" />
+          {{ downloadingNote ? 'جارٍ التحميل...' : 'تحميل سند الاسترداد' }}
+        </button>
         <div v-else class="text-center text-xs text-slate-400 py-2">تمت معالجة هذا الطلب مسبقاً</div>
       </div>
     </div>
@@ -104,7 +113,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/lib/api'
-import { ArrowRight, CheckCircle, XCircle } from 'lucide-vue-next'
+import { downloadFile } from '@/lib/download'
+import { ArrowRight, CheckCircle, XCircle, FileText } from 'lucide-vue-next'
 
 const props = defineProps({ id: [String, Number] })
 const router = useRouter()
@@ -112,6 +122,7 @@ const router = useRouter()
 const refund = ref(null)
 const loading = ref(true)
 const submitting = ref(false)
+const downloadingNote = ref(false)
 const error = ref('')
 const message = ref('')
 
@@ -167,6 +178,18 @@ const reject = async () => {
     error.value = err.response?.data?.message || 'فشل رفض الطلب'
   } finally {
     submitting.value = false
+  }
+}
+
+const downloadCreditNote = async () => {
+  downloadingNote.value = true
+  try {
+    const response = await api.get(`/refunds/${props.id}/credit-note`, { responseType: 'blob' })
+    downloadFile(response.data, `credit-note-${refund.value.refund_number}.pdf`)
+  } catch (err) {
+    error.value = 'فشل تحميل سند الاسترداد'
+  } finally {
+    downloadingNote.value = false
   }
 }
 

@@ -134,7 +134,6 @@ barqagency/
    - [ ] Define relationships and cascade rules (§9.9)
    - [ ] Create indexes for performance (§9.10)
    - [ ] Set up soft deletes for audit trail
-   - [ ] Add `tenant_id` for future multi-tenancy
 
 2. **Seeder & Factory Setup**
    - [ ] Create seeders for reference tables (countries, airlines, currencies, etc.)
@@ -155,12 +154,12 @@ barqagency/
 - **Finance:** wallets, wallet_transactions, wallet_transaction_types, invoices, invoice_items, payments, refunds, credit_notes
 - **Reference:** countries, cities, airports, airlines, cabin_classes, currencies, payment_methods
 - **Audit & History:** audit_logs, order_status_histories, wallet_balance_snapshots, login_histories
-- **Config:** settings, feature_flags, tenants
+- **Config:** settings, feature_flags
 
 #### Database Design Highlights
 - DECIMAL(15,3) for all money values (never FLOAT)
 - UUID + BIGINT for secure public IDs
-- Standard system columns: id, uuid, tenant_id, status, created_by, updated_by, deleted_by, timestamps, metadata
+- Standard system columns: id, uuid, status, created_by, updated_by, deleted_by, timestamps, metadata
 - Soft deletes for financial records
 - Immutable append-only transaction logs
 
@@ -984,9 +983,8 @@ GET  /api/reports/bookings       # Booking history
 - `notification_user` - Notification per-user read state
 - `jobs` - Queue jobs
 - `failed_jobs` - Failed queue jobs
-- `tenants` - Multi-tenancy support
 
-**Total: 48 tables**
+**Total: 47 tables**
 
 ### Key Constraints
 
@@ -1189,7 +1187,6 @@ GET  /api/reports/bookings       # Booking history
 - [ ] Hotel, visa, insurance products
 - [ ] Mobile apps (iOS/Android)
 - [ ] Public APIs for partners
-- [ ] Multi-company/multi-tenancy
 - [ ] Advanced reporting and analytics
 - [ ] AI-powered pricing recommendations
 - [ ] Chat/support system
