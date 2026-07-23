@@ -2,14 +2,11 @@
   <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
 
     <!-- Section Header -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-      <h2 class="text-lg font-extrabold text-slate-900">إيداعات المحافظ وشحن الرصيد</h2>
-      <p class="text-xs text-slate-400 mt-0.5">تحديد الوكالة وإضافة رصيد بعد التحقق من الإيصال</p>
-    </div>
+    <PageHeader title="إيداعات المحافظ وشحن الرصيد" subtitle="تحديد الوكالة وإضافة رصيد بعد التحقق من الإيصال" />
 
     <div class="grid md:grid-cols-2 gap-6">
       <!-- Form Card -->
-      <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
+      <Card class="space-y-5">
         <h3 class="font-bold text-sm text-slate-900">بيانات الشحن</h3>
 
         <!-- Agency Select -->
@@ -56,19 +53,15 @@
           </div>
 
           <!-- Submit -->
-          <button
-            @click="submitTopUp"
-            :disabled="!topUpAmount || topUpLoading"
-            class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-sm"
-          >
+          <Button @click="submitTopUp" variant="amber" size="md" block :disabled="!topUpAmount || topUpLoading">
             <Wallet class="w-4 h-4" />
             {{ topUpLoading ? 'جارٍ المعالجة...' : 'تأكيد الشحن' }}
-          </button>
+          </Button>
         </template>
-      </div>
+      </Card>
 
       <!-- Wallet Info Card -->
-      <div v-if="wallet" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+      <Card v-if="wallet" class="space-y-4">
         <h3 class="font-bold text-sm text-slate-900">معلومات المحفظة</h3>
 
         <div class="bg-[#0f172a] rounded-2xl p-5 space-y-4">
@@ -87,11 +80,11 @@
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
-      <div v-else-if="!selectedAgencyId" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex items-center justify-center text-slate-400 text-sm">
+      <Card v-else-if="!selectedAgencyId" class="flex items-center justify-center text-slate-400 text-sm">
         اختر وكالة لعرض معلومات المحفظة
-      </div>
+      </Card>
     </div>
   </div>
 </template>
@@ -100,6 +93,9 @@
 import { ref, onMounted } from 'vue'
 import api from '@/lib/api'
 import { Wallet } from 'lucide-vue-next'
+import PageHeader from '@/components/PageHeader.vue'
+import Card from '@/components/Card.vue'
+import Button from '@/components/Button.vue'
 
 const agencies = ref([])
 const wallet = ref(null)

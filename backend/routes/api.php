@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController;
 use App\Http\Controllers\Api\V1\Agency\AgencyController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
@@ -62,5 +63,9 @@ Route::prefix('v1')->group(function () {
 
         // Admin dashboard
         Route::get('/admin/dashboard', [DashboardController::class, 'index'])->middleware('role:admin');
+
+        // Admin audit trail
+        Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->middleware('role:admin');
+        Route::get('/admin/login-history', [AuditLogController::class, 'loginHistory'])->middleware('role:admin');
     });
 });

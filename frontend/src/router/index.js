@@ -35,6 +35,7 @@ const routes = [
       { path: 'refunds', name: 'admin.refunds', component: () => import('@/views/admin/RefundQueue.vue') },
       { path: 'refunds/:id', name: 'admin.refunds.review', component: () => import('@/views/admin/RefundReview.vue'), props: true },
       { path: 'reports', name: 'admin.reports', component: () => import('@/views/admin/Reports.vue') },
+      { path: 'audit-log', name: 'admin.audit-log', component: () => import('@/views/admin/AuditLog.vue') },
     ],
   },
   {

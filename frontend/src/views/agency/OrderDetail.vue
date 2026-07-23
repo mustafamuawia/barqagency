@@ -2,30 +2,24 @@
   <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
 
     <!-- Section Header -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-extrabold text-slate-900">تفاصيل الطلب</h2>
-        <p class="text-xs text-slate-400 mt-0.5">عرض تفاصيل الحجز والعرض المقدم من الإدارة</p>
-      </div>
-      <router-link to="/agency/orders" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
-        <ArrowRight class="w-4 h-4" />
-        العودة للطلبات
-      </router-link>
-    </div>
+    <PageHeader title="تفاصيل الطلب" subtitle="عرض تفاصيل الحجز والعرض المقدم من الإدارة">
+      <template #actions>
+        <router-link to="/agency/orders" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
+          <ArrowRight class="w-4 h-4" />
+          العودة للطلبات
+        </router-link>
+      </template>
+    </PageHeader>
 
-    <div v-if="loading" class="bg-white rounded-3xl p-12 shadow-sm border border-slate-200 text-center text-slate-400 text-sm">
-      جارٍ التحميل...
-    </div>
+    <LoadingState v-if="loading" />
 
     <template v-else-if="order">
       <div class="grid md:grid-cols-2 gap-6">
         <!-- Order Info -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <Card class="space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="font-bold text-sm text-slate-900">معلومات الطلب</h3>
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold" :class="statusClass(order.status?.name)">
-              {{ order.status?.label }}
-            </span>
+            <Badge :color="statusColor(order.status?.name)">{{ order.status?.label }}</Badge>
           </div>
 
           <div class="bg-[#0f172a] rounded-2xl p-5 space-y-3">
@@ -62,10 +56,10 @@
               {{ p.first_name }} {{ p.last_name }}
             </div>
           </div>
-        </div>
+        </Card>
 
         <!-- Quote Card -->
-        <div v-if="latestQuote" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <Card v-if="latestQuote" class="space-y-4">
           <h3 class="font-bold text-sm text-slate-900">العرض المقدم من الإدارة</h3>
 
           <div class="bg-[#0f172a] rounded-2xl p-5 space-y-3">
@@ -91,15 +85,17 @@
             {{ latestQuote.remarks }}
           </p>
 
-          <button
+          <Button
             v-if="order.status?.name === 'pricing_sent'"
+            variant="amber"
+            size="md"
+            block
             @click="approveOrder"
             :disabled="approving"
-            class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-sm"
           >
             <CheckCircle class="w-4 h-4" />
             {{ approving ? 'جارٍ المعالجة...' : 'موافقة وتأكيد الحجز' }}
-          </button>
+          </Button>
 
           <router-link
             v-if="['approved', 'confirmed'].includes(order.status?.name)"
@@ -109,7 +105,7 @@
             <RotateCcw class="w-4 h-4" />
             طلب استرداد لهذا الحجز
           </router-link>
-        </div>
+        </Card>
 
         <div v-else class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex items-center justify-center text-slate-400 text-sm">
           لم يتم استلام عرض سعر بعد
@@ -125,6 +121,11 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/lib/api'
 import { ArrowRight, CheckCircle, RotateCcw } from 'lucide-vue-next'
+import PageHeader from '@/components/PageHeader.vue'
+import LoadingState from '@/components/LoadingState.vue'
+import Card from '@/components/Card.vue'
+import Badge from '@/components/Badge.vue'
+import Button from '@/components/Button.vue'
 
 const props = defineProps({ id: [String, Number] })
 
@@ -164,14 +165,14 @@ const approveOrder = async () => {
   }
 }
 
-const statusClass = (status) => {
-  const classes = {
-    pending_pricing: 'bg-amber-100 text-amber-800',
-    pricing_sent: 'bg-blue-100 text-blue-800',
-    approved: 'bg-emerald-100 text-emerald-800',
-    confirmed: 'bg-purple-100 text-purple-800',
+const statusColor = (status) => {
+  const colors = {
+    pending_pricing: 'amber',
+    pricing_sent: 'blue',
+    approved: 'emerald',
+    confirmed: 'purple',
   }
-  return classes[status] || 'bg-slate-100 text-slate-600'
+  return colors[status] || 'slate'
 }
 
 const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)

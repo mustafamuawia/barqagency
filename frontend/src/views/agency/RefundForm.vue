@@ -2,26 +2,23 @@
   <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
 
     <!-- Section Header -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-extrabold text-slate-900">طلب استرداد جديد</h2>
-        <p class="text-xs text-slate-400 mt-0.5">اختر الحجز المؤكد وأدخل سبب الاسترداد</p>
-      </div>
-      <router-link to="/agency/refunds" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
-        <ArrowRight class="w-4 h-4" />
-        العودة للطلبات
-      </router-link>
-    </div>
+    <PageHeader title="طلب استرداد جديد" subtitle="اختر الحجز المؤكد وأدخل سبب الاسترداد">
+      <template #actions>
+        <router-link to="/agency/refunds" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
+          <ArrowRight class="w-4 h-4" />
+          العودة للطلبات
+        </router-link>
+      </template>
+    </PageHeader>
 
-    <div v-if="loading" class="bg-white rounded-3xl p-12 shadow-sm border border-slate-200 text-center text-slate-400 text-sm">
-      جارٍ التحميل...
-    </div>
+    <LoadingState v-if="loading" />
 
-    <div v-else-if="eligibleOrders.length === 0" class="bg-white rounded-3xl p-12 shadow-sm border border-slate-200 text-center text-slate-400 text-sm">
+    <EmptyState v-else-if="eligibleOrders.length === 0">
       لا توجد حجوزات مؤكدة مؤهلة لطلب استرداد حالياً
-    </div>
+    </EmptyState>
 
-    <form v-else @submit.prevent="handleSubmit" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
+    <Card v-else>
+    <form @submit.prevent="handleSubmit" class="space-y-5">
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1.5">اختر الحجز</label>
         <select v-model="form.order_id" required
@@ -50,12 +47,12 @@
 
       <div v-if="error" class="bg-red-100 text-red-700 text-xs font-semibold p-3 rounded-xl">{{ error }}</div>
 
-      <button type="submit" :disabled="submitting"
-        class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-sm">
+      <Button type="submit" variant="amber" size="md" block :disabled="submitting">
         <Send class="w-4 h-4" />
         {{ submitting ? 'جارٍ الإرسال...' : 'إرسال طلب الاسترداد' }}
-      </button>
+      </Button>
     </form>
+    </Card>
   </div>
 </template>
 
@@ -64,6 +61,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/lib/api'
 import { ArrowRight, Send } from 'lucide-vue-next'
+import PageHeader from '@/components/PageHeader.vue'
+import LoadingState from '@/components/LoadingState.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import Card from '@/components/Card.vue'
+import Button from '@/components/Button.vue'
 
 const router = useRouter()
 const route = useRoute()

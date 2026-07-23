@@ -105,6 +105,16 @@
             <span>التقارير المالية</span>
           </router-link>
 
+          <router-link
+            to="/admin/audit-log"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
+            :class="$route.path.startsWith('/admin/audit-log') ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+            @click="closeSidebar"
+          >
+            <History class="w-4 h-4 text-cyan-400" />
+            <span>سجل النشاطات</span>
+          </router-link>
+
           <div class="pt-2 my-2 border-t border-slate-800">
             <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
               <Settings class="w-4 h-4" />
@@ -180,7 +190,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
   Menu, X, ShieldCheck, LayoutDashboard, Ticket, Wallet, Users,
-  Settings, ShieldAlert, LogOut, PlaneTakeoff, Shield, RotateCcw, FileText
+  Settings, ShieldAlert, LogOut, PlaneTakeoff, Shield, RotateCcw, FileText, History
 } from 'lucide-vue-next'
 
 const router = useRouter()
