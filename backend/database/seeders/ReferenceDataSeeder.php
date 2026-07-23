@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use App\Models\{Country, City, Airport, Airline, CabinClass, PassengerType, Currency, UserType, AgencyType, OrderStatus, QuoteStatus};
+use App\Models\{Country, City, Airport, Airline, CabinClass, PassengerType, Currency, UserType, AgencyType, OrderStatus, QuoteStatus, RefundStatus, WalletTransactionType};
 
 class ReferenceDataSeeder extends Seeder
 {
@@ -96,5 +96,16 @@ class ReferenceDataSeeder extends Seeder
         QuoteStatus::firstOrCreate(['name' => 'accepted'], ['label' => 'Accepted']);
         QuoteStatus::firstOrCreate(['name' => 'rejected'], ['label' => 'Rejected']);
         QuoteStatus::firstOrCreate(['name' => 'expired'], ['label' => 'Expired']);
+
+        // Refund Statuses
+        RefundStatus::firstOrCreate(['name' => 'pending'], ['label' => 'Pending']);
+        RefundStatus::firstOrCreate(['name' => 'approved'], ['label' => 'Approved']);
+        RefundStatus::firstOrCreate(['name' => 'rejected'], ['label' => 'Rejected']);
+        RefundStatus::firstOrCreate(['name' => 'credited'], ['label' => 'Credited']);
+
+        // Wallet Transaction Types
+        WalletTransactionType::firstOrCreate(['name' => 'topup'], ['label' => 'Top-Up']);
+        WalletTransactionType::firstOrCreate(['name' => 'booking_debit'], ['label' => 'Booking Debit']);
+        WalletTransactionType::firstOrCreate(['name' => 'refund_credit'], ['label' => 'Refund Credit']);
     }
 }

@@ -4,14 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Refund;
 use App\Models\TravelAgency;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
 
 class DashboardController extends Controller
 {
     public function index()
     {
         $pendingOrders = Order::pendingPricing()->count();
+        $pendingRefunds = Refund::pending()->count();
         $totalBalance = Wallet::sum('balance');
 
         $recentOrders = Order::with(['agency', 'status'])
@@ -25,16 +28,26 @@ class DashboardController extends Controller
             ->take(5)
             ->values();
 
+        $totalBookings = WalletTransaction::whereHas('transactionType', fn ($q) => $q->where('name', 'booking_debit'))
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('amount');
+
+        $totalRefunds = WalletTransaction::whereHas('transactionType', fn ($q) => $q->where('name', 'refund_credit'))
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('amount');
+
         return response()->json([
             'stats' => [
                 'pendingOrders' => $pendingOrders,
-                'pendingRefunds' => 0,
+                'pendingRefunds' => $pendingRefunds,
                 'pendingTopups' => 0,
                 'totalBalance' => $totalBalance,
             ],
             'financials' => [
-                'totalBookings' => 0,
-                'totalRefunds' => 0,
+                'totalBookings' => abs($totalBookings),
+                'totalRefunds' => abs($totalRefunds),
             ],
             'recentOrders' => $recentOrders,
             'agenciesAtRisk' => $agenciesAtRisk,

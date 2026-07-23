@@ -46,6 +46,11 @@ class Order extends Model
         return $this->hasOne(Quote::class)->latestOfMany();
     }
 
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class)->orderByDesc('created_at');
+    }
+
     public function transitionTo(string $statusName, ?string $reason = null): bool
     {
         $newStatus = OrderStatus::where('name', $statusName)->firstOrFail();
