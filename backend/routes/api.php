@@ -14,11 +14,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/health', fn() => response()->json(['status' => 'ok']));
 
 Route::prefix('v1')->group(function () {
-    Route::post('/login', [LoginController::class, 'login']);
-    Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
-    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+    Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword'])->middleware('throttle:5,1');
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->middleware('throttle:5,1');
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
         Route::post('/logout', [LoginController::class, 'logout']);
         Route::get('/user', [LoginController::class, 'user']);
 

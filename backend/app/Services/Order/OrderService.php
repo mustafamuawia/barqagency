@@ -16,6 +16,7 @@ use App\Models\QuoteStatus;
 use App\Models\User;
 use App\Models\WalletTransactionType;
 use App\Traits\AuthorizesAgencyOwnership;
+use App\Services\Audit\AuditLogger;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,6 +24,8 @@ use Illuminate\Support\Str;
 class OrderService
 {
     use AuthorizesAgencyOwnership;
+
+    public function __construct(private readonly AuditLogger $audit) {}
 
     public function listForUser(User $user): LengthAwarePaginator
     {
@@ -123,6 +126,11 @@ class OrderService
 
             $order->transitionTo('pricing_sent', 'تم إرسال عرض السعر من الإدارة');
 
+            $this->audit->log('order.quote_submitted', $order, [], [
+                'total_price' => $data->totalPrice,
+                'order_number' => $order->order_number,
+            ]);
+
             return [
                 'order' => $order->fresh(['status']),
                 'quote' => $order->latestQuote,
@@ -143,13 +151,17 @@ class OrderService
             throw new MissingQuoteException();
         }
 
-        $wallet = $order->agency->wallet;
-        $newBalance = $wallet->balance - $quote->total_price;
-        if ($newBalance < -$wallet->credit_limit) {
-            throw new InsufficientWalletBalanceException();
-        }
+        return DB::transaction(function () use ($order, $quote, $user) {
+            // Lock the wallet row to prevent concurrent debits racing past the credit limit
+            $wallet = \App\Models\Wallet::where('agency_id', $order->agency_id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        return DB::transaction(function () use ($order, $quote, $wallet, $newBalance) {
+            $newBalance = $wallet->balance - $quote->total_price;
+            if ($newBalance < -$wallet->credit_limit) {
+                throw new InsufficientWalletBalanceException();
+            }
+
             $order->transitionTo('approved', 'تمت الموافقة على العرض من قبل الوكالة');
 
             $acceptedStatus = QuoteStatus::where('name', 'accepted')->firstOrFail();
@@ -168,6 +180,15 @@ class OrderService
                 'created_at' => now(),
             ]);
             $wallet->update(['balance' => $newBalance]);
+
+            $this->audit->log('order.approved', $order, [
+                'status' => 'pricing_sent',
+                'balance_before' => (float) $wallet->getOriginal('balance'),
+            ], [
+                'status' => 'approved',
+                'amount_debited' => (float) $quote->total_price,
+                'balance_after' => $newBalance,
+            ]);
 
             return $order->fresh(['status']);
         });

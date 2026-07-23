@@ -15,7 +15,10 @@ class TravelAgency extends Model
 
     protected $table = 'travel_agencies';
     protected $fillable = ['name', 'email', 'phone', 'address', 'agency_type_id', 'license_number', 'tax_id', 'status', 'credit_limit', 'metadata', 'created_by', 'updated_by', 'deleted_by'];
-    protected $casts = ['metadata' => 'json'];
+    protected $casts = [
+        'metadata' => 'json',
+        'phone'    => 'encrypted',
+    ];
 
     public function agencyType(): BelongsTo
     {

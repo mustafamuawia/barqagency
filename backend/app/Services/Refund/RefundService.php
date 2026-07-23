@@ -13,7 +13,9 @@ use App\Models\Order;
 use App\Models\Refund;
 use App\Models\RefundStatus;
 use App\Models\User;
+use App\Models\Wallet;
 use App\Models\WalletTransactionType;
+use App\Services\Audit\AuditLogger;
 use App\Traits\AuthorizesAgencyOwnership;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Collection;
@@ -25,6 +27,10 @@ class RefundService
     use AuthorizesAgencyOwnership;
 
     private const ELIGIBLE_ORDER_STATUSES = ['approved', 'confirmed'];
+
+    public function __construct(private readonly AuditLogger $audit)
+    {
+    }
 
     public function listForUser(User $user): Collection
     {
@@ -89,6 +95,11 @@ class RefundService
             'requested_at' => now(),
         ]);
 
+        $this->audit->log('refund.requested', $refund, [], [
+            'refund_number' => $refund->refund_number,
+            'original_amount' => (float) $refund->original_amount,
+        ]);
+
         return $refund->load(['order', 'status']);
     }
 
@@ -115,7 +126,10 @@ class RefundService
             $order = $refund->order;
             $order->transitionTo('cancelled', "تم استرداد الحجز رقم {$refund->refund_number}");
 
-            $wallet = $refund->agency->wallet;
+            // Lock the wallet row to prevent a concurrent order-approval debit or
+            // another refund credit from racing against this balance read/write.
+            $wallet = Wallet::where('agency_id', $refund->agency_id)->lockForUpdate()->firstOrFail();
+            $balanceBefore = (float) $wallet->balance;
             $newBalance = $wallet->balance + $refundAmount;
 
             $creditType = WalletTransactionType::firstOrCreate(['name' => 'refund_credit'], ['label' => 'Refund Credit']);
@@ -131,6 +145,16 @@ class RefundService
                 'created_at' => now(),
             ]);
             $wallet->update(['balance' => $newBalance]);
+
+            $this->audit->log('refund.approved', $refund, [
+                'status' => 'pending',
+                'balance_before' => $balanceBefore,
+            ], [
+                'status' => 'credited',
+                'refund_amount' => (float) $refundAmount,
+                'penalty_amount' => (float) $data->penaltyAmount,
+                'balance_after' => (float) $newBalance,
+            ]);
 
             return $refund->fresh(['status', 'order']);
         });
@@ -163,6 +187,8 @@ class RefundService
             'decided_by' => auth()->id(),
             'decided_at' => now(),
         ]);
+
+        $this->audit->log('refund.rejected', $refund, ['status' => 'pending'], ['status' => 'rejected', 'admin_remarks' => $adminRemarks]);
 
         return $refund->fresh(['status']);
     }
