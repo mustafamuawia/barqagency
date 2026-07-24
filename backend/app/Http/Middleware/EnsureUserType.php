@@ -23,6 +23,9 @@ class EnsureUserType
             if ($type === 'agency' && $user->isAgency()) {
                 return $next($request);
             }
+            if ($type === 'super_admin' && $user->isSuperAdmin()) {
+                return $next($request);
+            }
         }
 
         abort(403, 'ليس لديك صلاحية للوصول لهذا المورد');

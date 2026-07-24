@@ -12,9 +12,9 @@
     <!-- Admin Sidebar Drawer -->
     <aside
       :class="sidebarOpen ? 'translate-x-0' : 'translate-x-full'"
-      class="fixed top-0 right-0 h-full w-72 bg-[#0b132b] text-white z-50 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col justify-between border-l border-slate-800"
+      class="fixed top-0 right-0 h-full w-72 bg-[#0b132b] text-white z-50 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-800"
     >
-      <div>
+      <div class="flex-shrink-0">
         <!-- Sidebar Header -->
         <div class="p-5 flex items-center justify-between border-b border-slate-800/80">
           <div class="flex items-center gap-2">
@@ -41,9 +41,10 @@
             <p class="text-slate-400 text-[10px] font-mono truncate">{{ auth.user?.email || 'admin@barq.com' }}</p>
           </div>
         </div>
+      </div>
 
-        <!-- Nav Links -->
-        <nav class="px-3 space-y-1 text-xs font-semibold">
+      <!-- Nav Links (scrollable) -->
+      <nav class="sidebar-nav flex-1 overflow-y-auto px-3 space-y-1 text-xs font-semibold">
           <router-link
             to="/admin"
             exact
@@ -96,6 +97,17 @@
           </router-link>
 
           <router-link
+            v-if="auth.isSuperAdmin"
+            to="/admin/users"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
+            :class="$route.path.startsWith('/admin/users') ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+            @click="closeSidebar"
+          >
+            <UsersRound class="w-4 h-4 text-amber-400" />
+            <span>إدارة المستخدمين</span>
+          </router-link>
+
+          <router-link
             to="/admin/reports"
             class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
             :class="$route.path.startsWith('/admin/reports') ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
@@ -135,11 +147,10 @@
               <span>سجل نشاطات النظام (Logs)</span>
             </a>
           </div>
-        </nav>
-      </div>
+      </nav>
 
       <!-- Sidebar Footer -->
-      <div class="p-4 border-t border-slate-800/80 bg-slate-900/50">
+      <div class="p-4 border-t border-slate-800/80 bg-slate-900/50 flex-shrink-0">
         <button
           @click="logout"
           class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition"
@@ -199,7 +210,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
-  Menu, X, ShieldCheck, LayoutDashboard, Ticket, Wallet, Users,
+  Menu, X, ShieldCheck, LayoutDashboard, Ticket, Wallet, Users, UsersRound,
   Settings, ShieldAlert, LogOut, PlaneTakeoff, Shield, RotateCcw, FileText, History, UserCog
 } from 'lucide-vue-next'
 
@@ -215,3 +226,23 @@ const logout = async () => {
   router.push('/login')
 }
 </script>
+
+<style scoped>
+.sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(51 65 85) transparent;
+}
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background-color: rgb(51 65 85);
+  border-radius: 9999px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(71 85 105);
+}
+</style>

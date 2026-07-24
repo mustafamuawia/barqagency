@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController;
+use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Agency\AgencyController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
@@ -79,6 +80,17 @@ Route::prefix('v1')->group(function () {
 
         // Admin dashboard
         Route::get('/admin/dashboard', [DashboardController::class, 'index'])->middleware('role:admin');
+
+        // Admin user management (super admin only)
+        Route::middleware('role:super_admin')->group(function () {
+            Route::get('/admin/users', [UserController::class, 'index']);
+            Route::post('/admin/users', [UserController::class, 'store']);
+            Route::get('/admin/users/{user}', [UserController::class, 'show']);
+            Route::put('/admin/users/{user}', [UserController::class, 'update']);
+            Route::put('/admin/users/{user}/toggle-active', [UserController::class, 'toggleActive']);
+            Route::put('/admin/users/{id}/restore', [UserController::class, 'restore']);
+            Route::delete('/admin/users/{user}', [UserController::class, 'destroy']);
+        });
 
         // Admin audit trail
         Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->middleware('role:admin');

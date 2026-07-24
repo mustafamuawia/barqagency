@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Exceptions\InactiveAccountException;
 use App\Exceptions\InvalidCurrentPasswordException;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
@@ -45,6 +46,11 @@ class AuthService
                 $this->audit->loginAttempt($user->id, false);
             }
             return null;
+        }
+
+        if (!$user->is_active) {
+            $this->audit->loginAttempt($user->id, false);
+            throw new InactiveAccountException();
         }
 
         $this->audit->loginAttempt($user->id, true);
