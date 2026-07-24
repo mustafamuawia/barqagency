@@ -24,6 +24,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [LoginController::class, 'logout']);
         Route::get('/user', [LoginController::class, 'user']);
 
+        // Profile
+        Route::get('/profile', [\App\Http\Controllers\Api\V1\Auth\ProfileController::class, 'show']);
+        Route::put('/profile', [\App\Http\Controllers\Api\V1\Auth\ProfileController::class, 'update']);
+        Route::put('/profile/password', [\App\Http\Controllers\Api\V1\Auth\ProfileController::class, 'updatePassword']);
+
         // Orders
         Route::get('/orders', [OrderController::class, 'index']);
         Route::get('/orders/{order}', [OrderController::class, 'show']);

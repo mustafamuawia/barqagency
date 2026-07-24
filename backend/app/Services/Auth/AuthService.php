@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Exceptions\InvalidCurrentPasswordException;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Support\Facades\Hash;
@@ -9,6 +10,31 @@ use Illuminate\Support\Facades\Hash;
 class AuthService
 {
     public function __construct(private readonly AuditLogger $audit) {}
+
+    public function updateProfile(User $user, array $data): User
+    {
+        $oldValues = ['name' => $user->name, 'email' => $user->email];
+
+        $user->update([
+            'name' => $data['name'],
+            'email' => $data['email'],
+        ]);
+
+        $this->audit->log('profile.updated', $user, $oldValues, ['name' => $user->name, 'email' => $user->email]);
+
+        return $user->fresh(['userType', 'agencies']);
+    }
+
+    public function updatePassword(User $user, string $currentPassword, string $newPassword): void
+    {
+        if (!Hash::check($currentPassword, $user->password)) {
+            throw new InvalidCurrentPasswordException();
+        }
+
+        $user->forceFill(['password' => Hash::make($newPassword)])->save();
+
+        $this->audit->log('profile.password_changed', $user);
+    }
 
     public function attempt(string $email, string $password): ?array
     {

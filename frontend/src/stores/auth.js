@@ -75,6 +75,35 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const updateProfile = async (name, email) => {
+    try {
+      const response = await api.put('/profile', { name, email })
+      user.value = response.data.user
+      return { success: true }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'تعذر تحديث الملف الشخصي',
+      }
+    }
+  }
+
+  const updatePassword = async (currentPassword, password, passwordConfirmation) => {
+    try {
+      const response = await api.put('/profile/password', {
+        current_password: currentPassword,
+        password,
+        password_confirmation: passwordConfirmation,
+      })
+      return { success: true, message: response.data.message }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'تعذر تغيير كلمة المرور',
+      }
+    }
+  }
+
   const isSuperAdmin = computed(() => user.value?.user_type === 'super_admin')
   const isAdmin = computed(() => ['super_admin', 'admin'].includes(user.value?.user_type))
   const isAgency = computed(() => user.value?.user_type === 'b2b')
@@ -91,5 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
     fetchCurrentUser,
     forgotPassword,
     resetPassword,
+    updateProfile,
+    updatePassword,
   }
 })

@@ -103,6 +103,16 @@
             <FileText class="w-4 h-4 text-purple-400" />
             <span>التقارير المالية</span>
           </router-link>
+
+          <router-link
+            to="/agency/profile"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
+            :class="$route.path === '/agency/profile' ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+            @click="closeSidebar"
+          >
+            <UserCog class="w-4 h-4 text-slate-400" />
+            <span>الملف الشخصي</span>
+          </router-link>
         </nav>
       </div>
 
@@ -164,7 +174,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
   Menu, X, Building2, LayoutDashboard, ClipboardList, PlusCircle,
-  Wallet, LogOut, PlaneTakeoff, RotateCcw, FileText
+  Wallet, LogOut, PlaneTakeoff, RotateCcw, FileText, UserCog
 } from 'lucide-vue-next'
 
 const router = useRouter()

@@ -41,6 +41,7 @@ const routes = [
       { path: 'refunds/:id', name: 'admin.refunds.review', component: () => import('@/views/admin/RefundReview.vue'), props: true },
       { path: 'reports', name: 'admin.reports', component: () => import('@/views/admin/Reports.vue') },
       { path: 'audit-log', name: 'admin.audit-log', component: () => import('@/views/admin/AuditLog.vue') },
+      { path: 'profile', name: 'admin.profile', component: () => import('@/views/ProfilePage.vue') },
     ],
   },
   {
@@ -56,6 +57,7 @@ const routes = [
       { path: 'refunds', name: 'agency.refunds', component: () => import('@/views/agency/RefundList.vue') },
       { path: 'refunds/new', name: 'agency.refunds.new', component: () => import('@/views/agency/RefundForm.vue') },
       { path: 'reports', name: 'agency.reports', component: () => import('@/views/agency/Reports.vue') },
+      { path: 'profile', name: 'agency.profile', component: () => import('@/views/ProfilePage.vue') },
     ],
   },
 ]
