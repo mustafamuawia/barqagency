@@ -12,6 +12,7 @@ use App\Models\TravelAgency;
 use App\Services\Audit\AuditLogger;
 use App\Services\Pdf\PdfRenderer;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
@@ -42,6 +43,17 @@ class WalletService
         $wallet->load(['agency', 'transactions' => fn ($q) => $q->with('transactionType')->limit(50)]);
 
         return $wallet;
+    }
+
+    /** Full transaction ledger for the user's own wallet, paginated (not capped like myWallet()'s snapshot). */
+    public function paginateMyTransactions(User $user, int $perPage = 20): LengthAwarePaginator
+    {
+        $wallet = $this->myWallet($user);
+
+        return WalletTransaction::where('wallet_id', $wallet->id)
+            ->with('transactionType')
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
     }
 
     public function findByAgency(int $agencyId): Wallet
@@ -126,18 +138,27 @@ class WalletService
         });
     }
 
-    public function listPendingDeposits()
+    private function pendingDepositsQuery()
     {
         return \App\Models\WalletTransaction::whereHas('transactionType', function ($q) {
             $q->where('name', 'deposit_pending');
         })
         ->whereJsonContains('metadata->status', 'pending')
         ->with(['wallet.agency', 'createdBy'])
-        ->latest('created_at')
-        ->get();
+        ->latest('created_at');
     }
 
-    public function listMyDeposits(User $user, ?string $from = null, ?string $to = null)
+    public function listPendingDeposits()
+    {
+        return $this->pendingDepositsQuery()->get();
+    }
+
+    public function paginatePendingDeposits(int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->pendingDepositsQuery()->paginate($perPage);
+    }
+
+    private function myDepositsQuery(User $user, ?string $from = null, ?string $to = null)
     {
         $wallet = $this->myWallet($user);
 
@@ -148,11 +169,20 @@ class WalletService
             ->when($from, fn ($q) => $q->where('created_at', '>=', Carbon::parse($from)->startOfDay()))
             ->when($to, fn ($q) => $q->where('created_at', '<=', Carbon::parse($to)->endOfDay()))
             ->with('createdBy')
-            ->latest('created_at')
-            ->get();
+            ->latest('created_at');
     }
 
-    public function listAllDeposits(?string $from = null, ?string $to = null, ?int $agencyId = null)
+    public function listMyDeposits(User $user, ?string $from = null, ?string $to = null)
+    {
+        return $this->myDepositsQuery($user, $from, $to)->get();
+    }
+
+    public function paginateMyDeposits(User $user, ?string $from = null, ?string $to = null, int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->myDepositsQuery($user, $from, $to)->paginate($perPage);
+    }
+
+    private function allDepositsQuery(?string $from = null, ?string $to = null, ?int $agencyId = null)
     {
         return WalletTransaction::whereHas('transactionType', function ($q) {
             $q->where('name', 'deposit_pending');
@@ -161,8 +191,17 @@ class WalletService
         ->when($to, fn ($q) => $q->where('created_at', '<=', Carbon::parse($to)->endOfDay()))
         ->when($agencyId, fn ($q) => $q->whereHas('wallet', fn ($w) => $w->where('agency_id', $agencyId)))
         ->with(['wallet.agency', 'createdBy'])
-        ->latest('created_at')
-        ->get();
+        ->latest('created_at');
+    }
+
+    public function listAllDeposits(?string $from = null, ?string $to = null, ?int $agencyId = null)
+    {
+        return $this->allDepositsQuery($from, $to, $agencyId)->get();
+    }
+
+    public function paginateAllDeposits(?string $from = null, ?string $to = null, ?int $agencyId = null, int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->allDepositsQuery($from, $to, $agencyId)->paginate($perPage);
     }
 
     private function depositsReportData($deposits, ?string $from, ?string $to, ?string $agencyName): array

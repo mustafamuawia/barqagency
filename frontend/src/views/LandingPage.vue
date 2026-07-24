@@ -190,7 +190,53 @@
           </form>
 
           <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 text-center text-[11px] text-slate-600">
-            سجّل وكالتك أو ادخل إلى حسابك لإتمام البحث وإرسال طلب الحجز لفريقنا
+            سجّل وكالتك أو ادخل إلى حسابك لإتمام الحجز الفعلي بعد اختيار العرض المناسب
+          </div>
+
+          <!-- Search Results -->
+          <div v-if="searched" class="space-y-3 pt-2 border-t border-slate-100">
+            <div v-if="searching" class="text-center py-6 text-xs text-slate-400 flex items-center justify-center gap-2">
+              <Loader2 class="w-4 h-4 animate-spin" />
+              جارٍ البحث عن أفضل العروض...
+            </div>
+
+            <div v-else-if="searchError" class="p-3 rounded-xl text-xs font-semibold bg-red-100 text-red-700 text-center">
+              {{ searchError }}
+            </div>
+
+            <div v-else-if="!results.length" class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-center text-xs text-slate-500">
+              لا توجد عروض متاحة على هذا المسار حاليًا، جرّب مسارًا آخر مثل CAI → JED أو KRT → DXB
+            </div>
+
+            <div v-else class="space-y-2">
+              <p class="text-[11px] font-bold text-slate-500">{{ results.length }} عرض متاح</p>
+              <div
+                v-for="r in results"
+                :key="r.id"
+                class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 border border-slate-200/80 rounded-2xl p-4"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
+                    <PlaneTakeoff class="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p class="font-bold text-sm text-slate-900">{{ r.airline }}</p>
+                    <p class="text-[11px] text-slate-500 font-mono">
+                      {{ r.origin }} → {{ r.destination }} · {{ r.cabin_class }}<span v-if="r.duration_minutes"> · {{ formatDuration(r.duration_minutes) }}</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="text-left">
+                    <p class="text-lg font-black text-emerald-600 font-mono">{{ formatPrice(r.total_price, r.currency) }}</p>
+                    <p class="text-[10px] text-slate-400">{{ r.passengers }} مسافر × {{ formatPrice(r.unit_price, r.currency) }}</p>
+                  </div>
+                  <router-link to="/register" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap transition">
+                    احجز الآن
+                  </router-link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -356,10 +402,11 @@
 
 <script setup>
 import { ref } from 'vue'
+import api from '@/lib/api'
 import {
   PlaneTakeoff, PlaneLanding, ClipboardList, Wallet, RotateCcw, ShieldCheck,
   Workflow, Sparkles, MapPin, FileText, BadgeDollarSign, CheckCircle2,
-  Mail, Clock, Search, ArrowLeftRight, Calendar,
+  Mail, Clock, Search, ArrowLeftRight, Calendar, Loader2,
 } from 'lucide-vue-next'
 
 const destinations = [
@@ -384,6 +431,58 @@ const swapAirports = () => {
   searchForm.value.to = from
 }
 
-// UI stub only — search/booking logic to be wired up later
-const onSearch = () => {}
+const searching = ref(false)
+const searched = ref(false)
+const searchError = ref('')
+const results = ref([])
+
+const onSearch = async () => {
+  const origin = searchForm.value.from.trim().toUpperCase()
+  const destination = searchForm.value.to.trim().toUpperCase()
+
+  searchError.value = ''
+  if (origin.length !== 3 || destination.length !== 3) {
+    searched.value = true
+    results.value = []
+    searchError.value = 'يرجى إدخال رمز مطار صحيح مكوّن من 3 أحرف لكل من نقطة الانطلاق والوصول (مثال: CAI)'
+    return
+  }
+  if (origin === destination) {
+    searched.value = true
+    results.value = []
+    searchError.value = 'يجب أن تختلف نقطة الانطلاق عن نقطة الوصول'
+    return
+  }
+
+  const [passengers, cabin] = searchForm.value.cabinPassengers.split('-')
+
+  searching.value = true
+  searched.value = true
+  try {
+    const response = await api.get('/flight-search', {
+      params: {
+        origin,
+        destination,
+        trip_type: tripType.value,
+        cabin,
+        passengers: Number(passengers),
+      },
+    })
+    results.value = response.data.results
+  } catch (err) {
+    searchError.value = err.response?.data?.message || 'تعذر إتمام البحث، يرجى المحاولة مرة أخرى'
+    results.value = []
+  } finally {
+    searching.value = false
+  }
+}
+
+const formatPrice = (value, currency = 'USD') =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(value || 0)
+
+const formatDuration = (minutes) => {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return `${h}س ${m}د`
+}
 </script>

@@ -21,7 +21,7 @@
     <Card v-else class="space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="font-bold text-sm text-slate-900">سجل الطلبات</h3>
-        <Badge color="slate">{{ refunds.length }} طلب</Badge>
+        <Badge color="slate">{{ meta?.total ?? refunds.length }} طلب</Badge>
       </div>
 
       <DataTable :columns="['رقم الاسترداد', 'رقم الطلب', 'تاريخ الطلب', 'المبلغ الأصلي', 'صافي الاسترداد', 'الحالة', 'إجراءات']">
@@ -50,6 +50,8 @@
           </td>
         </tr>
       </DataTable>
+
+      <Pagination :meta="meta" @change="page => loadRefunds(page)" />
     </Card>
   </div>
 </template>
@@ -65,21 +67,27 @@ import Badge from '@/components/Badge.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import DataTable from '@/components/DataTable.vue'
+import Pagination from '@/components/Pagination.vue'
 
 const refunds = ref([])
+const meta = ref(null)
 const loading = ref(true)
 const downloadingId = ref(null)
 
-onMounted(async () => {
+const loadRefunds = async (page = 1) => {
+  loading.value = true
   try {
-    const response = await api.get('/refunds')
-    refunds.value = response.data
+    const response = await api.get('/refunds', { params: { page } })
+    refunds.value = response.data.data
+    meta.value = response.data
   } catch (err) {
     console.error('Failed to load refunds', err)
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(loadRefunds)
 
 const statusColor = (status) => {
   const colors = {

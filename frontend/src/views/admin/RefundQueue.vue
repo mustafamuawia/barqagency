@@ -39,12 +39,14 @@
           </td>
         </tr>
       </DataTable>
+
+      <Pagination :meta="meta" @change="page => loadRefunds(page)" />
     </Card>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import api from '@/lib/api'
 import { Eye } from 'lucide-vue-next'
 import PageHeader from '@/components/PageHeader.vue'
@@ -53,22 +55,28 @@ import Badge from '@/components/Badge.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import DataTable from '@/components/DataTable.vue'
+import Pagination from '@/components/Pagination.vue'
 
 const refunds = ref([])
+const meta = ref(null)
+const pendingCount = ref(0)
 const loading = ref(true)
 
-const pendingCount = computed(() => refunds.value.filter(r => r.status?.name === 'pending').length)
-
-onMounted(async () => {
+const loadRefunds = async (page = 1) => {
+  loading.value = true
   try {
-    const response = await api.get('/refunds')
-    refunds.value = response.data
+    const response = await api.get('/refunds', { params: { page } })
+    refunds.value = response.data.data
+    pendingCount.value = response.data.pending_count
+    meta.value = response.data
   } catch (err) {
     console.error('Failed to load refunds', err)
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(loadRefunds)
 
 const statusColor = (status) => {
   const colors = {

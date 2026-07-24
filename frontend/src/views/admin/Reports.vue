@@ -86,14 +86,14 @@
 
         <!-- Booking History -->
         <Card class="space-y-4">
-          <h3 class="font-bold text-sm text-slate-900">سجل الحجوزات ({{ summary.orders.length }})</h3>
+          <h3 class="font-bold text-sm text-slate-900">سجل الحجوزات ({{ bookingHistoryMeta?.total ?? bookingHistory.length }})</h3>
 
-          <div v-if="summary.orders.length === 0" class="text-center text-slate-400 text-sm py-8">
+          <div v-if="bookingHistory.length === 0" class="text-center text-slate-400 text-sm py-8">
             لا توجد حجوزات في هذه الفترة
           </div>
 
           <DataTable v-else :columns="['رقم الطلب', 'الوكالة', 'التاريخ', 'الحالة', 'القيمة']">
-            <tr v-for="order in summary.orders" :key="order.order_number" class="hover:bg-slate-50 transition">
+            <tr v-for="order in bookingHistory" :key="order.order_number" class="hover:bg-slate-50 transition">
               <td class="p-3 font-mono font-bold text-slate-700">{{ order.order_number }}</td>
               <td class="p-3 text-slate-600">{{ order.agency_name }}</td>
               <td class="p-3 text-slate-500">{{ order.date }}</td>
@@ -101,6 +101,8 @@
               <td class="p-3 font-mono text-slate-700">{{ formatCurrency(order.amount) }}</td>
             </tr>
           </DataTable>
+
+          <Pagination :meta="bookingHistoryMeta" @change="page => loadBookingHistory(page)" />
         </Card>
       </template>
     </template>
@@ -172,6 +174,8 @@
             </tbody>
           </table>
         </div>
+
+        <Pagination :meta="depositsMeta" @change="page => loadAllDeposits(page)" />
       </Card>
     </template>
 
@@ -187,6 +191,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
 import LoadingState from '@/components/LoadingState.vue'
+import Pagination from '@/components/Pagination.vue'
 import DataTable from '@/components/DataTable.vue'
 
 const activeTab = ref('summary')
@@ -201,7 +206,10 @@ const depositsLoading = ref(false)
 const depositsExporting = ref(false)
 const agencies = ref([])
 const summary = ref(null)
+const bookingHistory = ref([])
+const bookingHistoryMeta = ref(null)
 const allDeposits = ref([])
+const depositsMeta = ref(null)
 
 const today = new Date().toISOString().slice(0, 10)
 const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)
@@ -229,11 +237,22 @@ const loadSummary = async () => {
   }
 }
 
-const loadAllDeposits = async () => {
+const loadBookingHistory = async (page = 1) => {
+  try {
+    const response = await api.get('/reports/booking-history', { params: { ...filters.value, page } })
+    bookingHistory.value = response.data.data
+    bookingHistoryMeta.value = response.data
+  } catch (err) {
+    console.error('Failed to load booking history', err)
+  }
+}
+
+const loadAllDeposits = async (page = 1) => {
   depositsLoading.value = true
   try {
-    const response = await api.get('/wallets/all-deposits', { params: filters.value })
-    allDeposits.value = response.data
+    const response = await api.get('/wallets/all-deposits', { params: { ...filters.value, page } })
+    allDeposits.value = response.data.data
+    depositsMeta.value = response.data
   } catch (err) {
     console.error('Failed to load all deposits', err)
   } finally {
@@ -242,7 +261,7 @@ const loadAllDeposits = async () => {
 }
 
 const applyFilters = async () => {
-  await Promise.all([loadSummary(), loadAllDeposits()])
+  await Promise.all([loadSummary(), loadBookingHistory(), loadAllDeposits()])
 }
 
 const downloadDepositsPdf = async () => {
@@ -295,8 +314,7 @@ const downloadCsv = async () => {
 
 onMounted(async () => {
   await loadAgencies()
-  await loadSummary()
-  await loadAllDeposits()
+  await Promise.all([loadSummary(), loadBookingHistory(), loadAllDeposits()])
 })
 
 const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)

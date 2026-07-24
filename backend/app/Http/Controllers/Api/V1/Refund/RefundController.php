@@ -23,7 +23,9 @@ class RefundController extends Controller
     {
         $refunds = $this->refundService->listForUser($request->user());
 
-        return response()->json($refunds);
+        return response()->json($refunds->toArray() + [
+            'pending_count' => $this->refundService->pendingCountForUser($request->user()),
+        ]);
     }
 
     public function show(Request $request, Refund $refund)

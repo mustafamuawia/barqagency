@@ -21,7 +21,7 @@
     <Card v-else class="space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="font-bold text-sm text-slate-900">قائمة الطلبات</h3>
-        <Badge color="slate">{{ orders.length }} طلب</Badge>
+        <Badge color="slate">{{ meta?.total ?? orders.length }} طلب</Badge>
       </div>
 
       <DataTable :columns="['رقم الطلب', 'تاريخ الإنشاء', 'الركاب', 'المغادرة', 'العرض المقدم', 'الحالة']">
@@ -43,6 +43,8 @@
           </td>
         </tr>
       </DataTable>
+
+      <Pagination :meta="meta" @change="page => loadOrders(page)" />
     </Card>
   </div>
 </template>
@@ -57,20 +59,26 @@ import Badge from '@/components/Badge.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import DataTable from '@/components/DataTable.vue'
+import Pagination from '@/components/Pagination.vue'
 
 const orders = ref([])
+const meta = ref(null)
 const loading = ref(true)
 
-onMounted(async () => {
+const loadOrders = async (page = 1) => {
+  loading.value = true
   try {
-    const response = await api.get('/orders')
-    orders.value = response.data.data || response.data
+    const response = await api.get('/orders', { params: { page } })
+    orders.value = response.data.data
+    meta.value = response.data
   } catch (err) {
     console.error('Failed to load orders', err)
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(loadOrders)
 
 const statusColor = (status) => {
   const colors = {

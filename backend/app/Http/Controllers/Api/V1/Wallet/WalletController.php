@@ -81,13 +81,20 @@ class WalletController extends Controller
 
     public function myDeposits(DepositFilterRequest $request)
     {
-        $deposits = $this->walletService->listMyDeposits(
+        $deposits = $this->walletService->paginateMyDeposits(
             $request->user(),
             $request->validated('from'),
             $request->validated('to')
         );
 
         return response()->json($deposits);
+    }
+
+    public function myTransactions(Request $request)
+    {
+        $transactions = $this->walletService->paginateMyTransactions($request->user());
+
+        return response()->json($transactions);
     }
 
     public function myDepositsPdf(DepositFilterRequest $request)
@@ -110,14 +117,14 @@ class WalletController extends Controller
 
     public function pendingDeposits()
     {
-        $deposits = $this->walletService->listPendingDeposits();
+        $deposits = $this->walletService->paginatePendingDeposits();
 
         return response()->json($deposits);
     }
 
     public function allDeposits(DepositFilterRequest $request)
     {
-        $deposits = $this->walletService->listAllDeposits(
+        $deposits = $this->walletService->paginateAllDeposits(
             $request->validated('from'),
             $request->validated('to'),
             $request->validated('agency_id')

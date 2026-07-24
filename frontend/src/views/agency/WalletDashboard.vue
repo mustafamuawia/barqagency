@@ -129,18 +129,20 @@
             </tbody>
           </table>
         </div>
+
+        <Pagination :meta="depositHistoryMeta" @change="page => loadDepositHistory(page)" />
       </Card>
 
       <!-- Full Transactions -->
       <Card class="space-y-4">
         <h3 class="font-bold text-sm text-slate-900">سجل المعاملات والإيداعات</h3>
 
-        <div v-if="!wallet.transactions?.length" class="text-center text-slate-400 text-sm py-8">
+        <div v-if="!transactions.length" class="text-center text-slate-400 text-sm py-8">
           لا توجد معاملات بعد
         </div>
 
         <DataTable v-else :columns="['التاريخ', 'النوع', 'الوصف', 'المبلغ', 'الرصيد بعد']">
-          <tr v-for="tx in wallet.transactions" :key="tx.id" class="hover:bg-slate-50 transition">
+          <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-slate-50 transition">
             <td class="p-3 text-slate-500">{{ formatDate(tx.created_at) }}</td>
             <td class="p-3 text-slate-600">{{ tx.transaction_type?.label || 'إيداع' }}</td>
             <td class="p-3 text-slate-600">{{ tx.description }}</td>
@@ -150,6 +152,8 @@
             <td class="p-3 text-center font-mono font-bold text-slate-700">{{ formatCurrency(tx.balance_after) }}</td>
           </tr>
         </DataTable>
+
+        <Pagination :meta="transactionsMeta" @change="page => loadTransactions(page)" />
       </Card>
     </template>
   </div>
@@ -164,6 +168,7 @@ import LoadingState from '@/components/LoadingState.vue'
 import Card from '@/components/Card.vue'
 import StatTile from '@/components/StatTile.vue'
 import DataTable from '@/components/DataTable.vue'
+import Pagination from '@/components/Pagination.vue'
 
 const wallet = ref(null)
 const loading = ref(true)
@@ -172,6 +177,9 @@ const depositMessage = ref('')
 const depositError = ref('')
 const receiptFile = ref(null)
 const depositHistory = ref([])
+const depositHistoryMeta = ref(null)
+const transactions = ref([])
+const transactionsMeta = ref(null)
 
 const depositForm = reactive({
   amount: 250,
@@ -189,26 +197,28 @@ const fetchWallet = async () => {
   }
 }
 
-const fetchDepositHistory = async () => {
+const loadDepositHistory = async (page = 1) => {
   try {
-    // Fetch transactions from wallet and filter those with deposit_pending type
-    const response = await api.get('/wallets')
-    const txs = response.data?.transactions ?? []
-    depositHistory.value = txs.filter(tx =>
-      tx.transaction_type?.name === 'deposit_pending' || tx.metadata?.reference_number
-    )
+    const response = await api.get('/wallets/my-deposits', { params: { page } })
+    depositHistory.value = response.data.data
+    depositHistoryMeta.value = response.data
   } catch (err) {
     console.error('Failed to load deposit history', err)
   }
 }
 
+const loadTransactions = async (page = 1) => {
+  try {
+    const response = await api.get('/wallets/transactions', { params: { page } })
+    transactions.value = response.data.data
+    transactionsMeta.value = response.data
+  } catch (err) {
+    console.error('Failed to load transactions', err)
+  }
+}
+
 onMounted(async () => {
-  await fetchWallet()
-  // deposit history is from wallet.transactions with deposit_pending type
-  const txs = wallet.value?.transactions ?? []
-  depositHistory.value = txs.filter(tx =>
-    tx.transaction_type?.name === 'deposit_pending'
-  )
+  await Promise.all([fetchWallet(), loadDepositHistory(), loadTransactions()])
 })
 
 const handleFileChange = (e) => {
@@ -237,10 +247,7 @@ const submitDeposit = async () => {
     depositMessage.value = 'تم إرسال إشعار الإيداع بنجاح. سيتم شحن المحفظة بعد مراجعة الإدارة.'
     depositForm.reference_number = ''
     receiptFile.value = null
-    await fetchWallet()
-    depositHistory.value = (wallet.value?.transactions ?? []).filter(tx =>
-      tx.transaction_type?.name === 'deposit_pending'
-    )
+    await Promise.all([fetchWallet(), loadDepositHistory(), loadTransactions()])
   } catch (err) {
     depositError.value = err.response?.data?.message || 'حدث خطأ أثناء إرسال الإشعار.'
   } finally {

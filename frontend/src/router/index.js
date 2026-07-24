@@ -36,6 +36,7 @@ const routes = [
       { path: 'orders', name: 'admin.orders', component: () => import('@/views/admin/OrderQueue.vue') },
       { path: 'orders/:id/price', name: 'admin.orders.price', component: () => import('@/views/admin/PricingForm.vue'), props: true },
       { path: 'agencies', name: 'admin.agencies', component: () => import('@/views/admin/AgencyList.vue') },
+      { path: 'mock-flights', name: 'admin.mock-flights', component: () => import('@/views/admin/MockFlights.vue') },
       { path: 'users', name: 'admin.users', component: () => import('@/views/admin/UserManagement.vue'), meta: { requireRole: 'super_admin' } },
       { path: 'wallet/topup', name: 'admin.wallet.topup', component: () => import('@/views/admin/WalletTopUp.vue') },
       { path: 'refunds', name: 'admin.refunds', component: () => import('@/views/admin/RefundQueue.vue') },

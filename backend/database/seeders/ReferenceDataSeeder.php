@@ -28,6 +28,7 @@ class ReferenceDataSeeder extends Seeder
         Country::firstOrCreate(['code' => 'EG'], ['name' => 'Egypt', 'phone_code' => '+20']);
         Country::firstOrCreate(['code' => 'QA'], ['name' => 'Qatar', 'phone_code' => '+974']);
         Country::firstOrCreate(['code' => 'KW'], ['name' => 'Kuwait', 'phone_code' => '+965']);
+        Country::firstOrCreate(['code' => 'TR'], ['name' => 'Turkey', 'phone_code' => '+90']);
 
         // Cities
         $sudan = Country::where('code', 'SD')->first();
@@ -35,28 +36,35 @@ class ReferenceDataSeeder extends Seeder
         $sa = Country::where('code', 'SA')->first();
         $egypt = Country::where('code', 'EG')->first();
         $qatar = Country::where('code', 'QA')->first();
+        $turkey = Country::where('code', 'TR')->first();
 
         City::firstOrCreate(['name' => 'Khartoum', 'country_id' => $sudan->id]);
         City::firstOrCreate(['name' => 'Dubai', 'country_id' => $uae->id]);
         City::firstOrCreate(['name' => 'Abu Dhabi', 'country_id' => $uae->id]);
         City::firstOrCreate(['name' => 'Riyadh', 'country_id' => $sa->id]);
+        City::firstOrCreate(['name' => 'Jeddah', 'country_id' => $sa->id]);
         City::firstOrCreate(['name' => 'Cairo', 'country_id' => $egypt->id]);
         City::firstOrCreate(['name' => 'Doha', 'country_id' => $qatar->id]);
+        City::firstOrCreate(['name' => 'Istanbul', 'country_id' => $turkey->id]);
 
         // Airports
         $krt_city = City::where('name', 'Khartoum')->first();
         $dxb_city = City::where('name', 'Dubai')->first();
         $auh_city = City::where('name', 'Abu Dhabi')->first();
         $ry_city = City::where('name', 'Riyadh')->first();
+        $jed_city = City::where('name', 'Jeddah')->first();
         $cai_city = City::where('name', 'Cairo')->first();
         $doha_city = City::where('name', 'Doha')->first();
+        $ist_city = City::where('name', 'Istanbul')->first();
 
         Airport::firstOrCreate(['code' => 'KRT'], ['name' => 'Khartoum International', 'city_id' => $krt_city->id, 'country_id' => $sudan->id]);
         Airport::firstOrCreate(['code' => 'DXB'], ['name' => 'Dubai International', 'city_id' => $dxb_city->id, 'country_id' => $uae->id]);
         Airport::firstOrCreate(['code' => 'AUH'], ['name' => 'Abu Dhabi International', 'city_id' => $auh_city->id, 'country_id' => $uae->id]);
         Airport::firstOrCreate(['code' => 'RYD'], ['name' => 'Riyadh International', 'city_id' => $ry_city->id, 'country_id' => $sa->id]);
+        Airport::firstOrCreate(['code' => 'JED'], ['name' => 'King Abdulaziz International', 'city_id' => $jed_city->id, 'country_id' => $sa->id]);
         Airport::firstOrCreate(['code' => 'CAI'], ['name' => 'Cairo International', 'city_id' => $cai_city->id, 'country_id' => $egypt->id]);
         Airport::firstOrCreate(['code' => 'DOH'], ['name' => 'Hamad International', 'city_id' => $doha_city->id, 'country_id' => $qatar->id]);
+        Airport::firstOrCreate(['code' => 'IST'], ['name' => 'Istanbul Airport', 'city_id' => $ist_city->id, 'country_id' => $turkey->id]);
 
         // Airlines
         Airline::firstOrCreate(['code' => 'FX'], ['name' => 'Badr Airlines', 'is_local' => true, 'channel' => 'local']);

@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\Pdf\PdfRenderer;
 use App\Traits\AuthorizesAgencyOwnership;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Response;
 
 class ReportService
@@ -19,18 +21,13 @@ class ReportService
     {
     }
 
+    /** Totals only (no order rows) — this is what the on-screen JSON summary returns. */
     public function summary(User $user, ReportFilterData $filter): array
     {
-        $agencyId = $user->isAgency() ? $this->agencyIdFor($user) : $filter->agencyId;
+        $agencyId = $this->resolveAgencyId($user, $filter);
 
         $totalBookings = abs($this->walletSum('booking_debit', $filter, $agencyId));
         $totalRefunds = abs($this->walletSum('refund_credit', $filter, $agencyId));
-
-        $orders = Order::with(['agency', 'status', 'latestQuote'])
-            ->whereBetween('created_at', [$filter->from, $filter->to])
-            ->when($agencyId, fn ($q) => $q->where('agency_id', $agencyId))
-            ->orderByDesc('created_at')
-            ->get();
 
         return [
             'from' => $filter->from->toDateString(),
@@ -39,26 +36,29 @@ class ReportService
             'totalBookings' => $totalBookings,
             'totalRefunds' => $totalRefunds,
             'net' => $totalBookings - $totalRefunds,
-            'orders' => $orders->map(fn (Order $order) => [
-                'order_number' => $order->order_number,
-                'agency_name' => $order->agency?->name,
-                'date' => $order->created_at->toDateString(),
-                'status_label' => $order->status?->label,
-                'amount' => (float) ($order->latestQuote?->total_price ?? 0),
-            ])->values()->all(),
         ];
+    }
+
+    /** Paginated order rows for the on-screen booking-history table. */
+    public function paginatedOrders(User $user, ReportFilterData $filter, int $perPage = 20): LengthAwarePaginator
+    {
+        $agencyId = $this->resolveAgencyId($user, $filter);
+
+        return $this->ordersQuery($filter, $agencyId)
+            ->paginate($perPage)
+            ->through(fn (Order $order) => $this->mapOrder($order));
     }
 
     public function renderPdf(User $user, ReportFilterData $filter)
     {
-        $data = $this->summary($user, $filter);
+        $data = $this->reportData($user, $filter);
 
         return $this->pdfRenderer->render('reports.financial-summary', $data, "financial-summary-{$data['from']}-to-{$data['to']}.pdf");
     }
 
     public function renderCsv(User $user, ReportFilterData $filter)
     {
-        $data = $this->summary($user, $filter);
+        $data = $this->reportData($user, $filter);
 
         $csv = fopen('php://temp', 'w+');
         fputcsv($csv, ['Order Number', 'Agency', 'Date', 'Status', 'Amount']);
@@ -79,6 +79,43 @@ class ReportService
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
+    }
+
+    /** Totals + the full (unpaginated) order set — only for PDF/CSV export, never exposed as JSON. */
+    private function reportData(User $user, ReportFilterData $filter): array
+    {
+        $agencyId = $this->resolveAgencyId($user, $filter);
+
+        $orders = $this->ordersQuery($filter, $agencyId)->get();
+
+        return [
+            ...$this->summary($user, $filter),
+            'orders' => $orders->map(fn (Order $order) => $this->mapOrder($order))->values()->all(),
+        ];
+    }
+
+    private function resolveAgencyId(User $user, ReportFilterData $filter): ?int
+    {
+        return $user->isAgency() ? $this->agencyIdFor($user) : $filter->agencyId;
+    }
+
+    private function ordersQuery(ReportFilterData $filter, ?int $agencyId): Builder
+    {
+        return Order::with(['agency', 'status', 'latestQuote'])
+            ->whereBetween('created_at', [$filter->from, $filter->to])
+            ->when($agencyId, fn ($q) => $q->where('agency_id', $agencyId))
+            ->orderByDesc('created_at');
+    }
+
+    private function mapOrder(Order $order): array
+    {
+        return [
+            'order_number' => $order->order_number,
+            'agency_name' => $order->agency?->name,
+            'date' => $order->created_at->toDateString(),
+            'status_label' => $order->status?->label,
+            'amount' => (float) ($order->latestQuote?->total_price ?? 0),
+        ];
     }
 
     private function walletSum(string $transactionType, ReportFilterData $filter, ?int $agencyId): float

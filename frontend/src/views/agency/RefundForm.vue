@@ -94,7 +94,7 @@ onMounted(async () => {
   try {
     const [ordersRes, refundsRes] = await Promise.all([api.get('/orders'), api.get('/refunds')])
     orders.value = ordersRes.data.data || ordersRes.data
-    refunds.value = refundsRes.data
+    refunds.value = refundsRes.data.data || refundsRes.data
   } catch (err) {
     error.value = 'فشل تحميل بيانات الطلبات'
   } finally {

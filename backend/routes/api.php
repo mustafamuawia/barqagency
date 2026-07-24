@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController;
+use App\Http\Controllers\Api\V1\Admin\MockFlightController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Agency\AgencyController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
+use App\Http\Controllers\Api\V1\FlightSearch\FlightSearchController;
 use App\Http\Controllers\Api\V1\Order\OrderController;
 use App\Http\Controllers\Api\V1\ReferenceData\ReferenceDataController;
 use App\Http\Controllers\Api\V1\Refund\RefundController;
@@ -20,6 +22,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/register', [\App\Http\Controllers\Api\V1\Auth\RegisterController::class, 'registerAgency'])->middleware('throttle:10,1');
     Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->middleware('throttle:5,1');
+    Route::get('/flight-search', [FlightSearchController::class, 'search'])->middleware('throttle:30,1');
 
     Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
         Route::post('/logout', [LoginController::class, 'logout']);
@@ -43,6 +46,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/wallets/my-deposits', [WalletController::class, 'myDeposits'])->middleware('role:agency');
         Route::get('/wallets/my-deposits/pdf', [WalletController::class, 'myDepositsPdf'])->middleware('role:agency');
         Route::get('/wallets/my-deposits/csv', [WalletController::class, 'myDepositsCsv'])->middleware('role:agency');
+        Route::get('/wallets/transactions', [WalletController::class, 'myTransactions'])->middleware('role:agency');
         Route::get('/wallets/pending-deposits', [WalletController::class, 'pendingDeposits'])->middleware('role:admin');
         Route::get('/wallets/all-deposits', [WalletController::class, 'allDeposits'])->middleware('role:admin');
         Route::get('/wallets/all-deposits/pdf', [WalletController::class, 'allDepositsPdf'])->middleware('role:admin');
@@ -71,6 +75,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/reports/financial-summary', [ReportController::class, 'financialSummary']);
         Route::get('/reports/financial-summary/pdf', [ReportController::class, 'financialSummaryPdf']);
         Route::get('/reports/financial-summary/csv', [ReportController::class, 'financialSummaryCsv']);
+        Route::get('/reports/booking-history', [ReportController::class, 'bookingHistory']);
 
         // Reference data
         Route::get('/airlines', [ReferenceDataController::class, 'airlines']);
@@ -95,5 +100,13 @@ Route::prefix('v1')->group(function () {
         // Admin audit trail
         Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->middleware('role:admin');
         Route::get('/admin/login-history', [AuditLogController::class, 'loginHistory'])->middleware('role:admin');
+
+        // Admin mock flight offers (search & pricing data shown on the public landing page)
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/admin/mock-flights', [MockFlightController::class, 'index']);
+            Route::post('/admin/mock-flights', [MockFlightController::class, 'store']);
+            Route::put('/admin/mock-flights/{mockFlight}', [MockFlightController::class, 'update']);
+            Route::delete('/admin/mock-flights/{mockFlight}', [MockFlightController::class, 'destroy']);
+        });
     });
 });

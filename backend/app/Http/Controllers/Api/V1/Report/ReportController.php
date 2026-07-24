@@ -20,6 +20,13 @@ class ReportController extends Controller
         return response()->json($summary);
     }
 
+    public function bookingHistory(ReportFilterRequest $request)
+    {
+        $orders = $this->reportService->paginatedOrders($request->user(), ReportFilterData::fromRequest($request));
+
+        return response()->json($orders);
+    }
+
     public function financialSummaryPdf(ReportFilterRequest $request)
     {
         return $this->reportService->renderPdf($request->user(), ReportFilterData::fromRequest($request));

@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ReferenceDataSeeder::class,
             AdminUsersSeeder::class,
+            MockFlightOfferSeeder::class,
         ]);
     }
 }

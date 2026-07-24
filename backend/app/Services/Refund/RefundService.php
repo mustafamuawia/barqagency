@@ -18,7 +18,7 @@ use App\Models\WalletTransactionType;
 use App\Services\Audit\AuditLogger;
 use App\Services\Pdf\PdfRenderer;
 use App\Traits\AuthorizesAgencyOwnership;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -32,7 +32,7 @@ class RefundService
     {
     }
 
-    public function listForUser(User $user): Collection
+    public function listForUser(User $user): LengthAwarePaginator
     {
         $query = Refund::with(['order', 'agency', 'status', 'requestedBy', 'decidedBy'])
             ->orderByDesc('requested_at');
@@ -41,7 +41,19 @@ class RefundService
             $query->where('agency_id', $this->agencyIdFor($user));
         }
 
-        return $query->get();
+        return $query->paginate(20);
+    }
+
+    /** Total pending count for this user's scope, independent of the current page. */
+    public function pendingCountForUser(User $user): int
+    {
+        $query = Refund::whereHas('status', fn ($q) => $q->where('name', 'pending'));
+
+        if ($user->isAgency()) {
+            $query->where('agency_id', $this->agencyIdFor($user));
+        }
+
+        return $query->count();
     }
 
     public function findForUser(User $user, Refund $refund): Refund

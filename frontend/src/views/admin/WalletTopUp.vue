@@ -92,7 +92,7 @@
       <div class="flex items-center justify-between">
         <h3 class="font-bold text-sm text-slate-900">طلبات وإشعارات الإيداع المعلقة (طلبات الوكلاء)</h3>
         <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
-          {{ pendingDeposits.length }} طلب معلق
+          {{ pendingDepositsMeta?.total ?? pendingDeposits.length }} طلب معلق
         </span>
       </div>
 
@@ -137,6 +137,8 @@
           </tbody>
         </table>
       </div>
+
+      <Pagination :meta="pendingDepositsMeta" @change="page => loadPendingDeposits(page)" />
     </Card>
   </div>
 </template>
@@ -148,6 +150,7 @@ import { Wallet, FileText } from 'lucide-vue-next'
 import PageHeader from '@/components/PageHeader.vue'
 import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
+import Pagination from '@/components/Pagination.vue'
 
 const agencies = ref([])
 const wallet = ref(null)
@@ -158,11 +161,13 @@ const topUpLoading = ref(false)
 const message = ref('')
 const messageClass = ref('')
 const pendingDeposits = ref([])
+const pendingDepositsMeta = ref(null)
 
-const loadPendingDeposits = async () => {
+const loadPendingDeposits = async (page = 1) => {
   try {
-    const res = await api.get('/wallets/pending-deposits')
-    pendingDeposits.value = res.data
+    const res = await api.get('/wallets/pending-deposits', { params: { page } })
+    pendingDeposits.value = res.data.data
+    pendingDepositsMeta.value = res.data
   } catch (err) {
     console.error('Failed to load pending deposits', err)
   }
