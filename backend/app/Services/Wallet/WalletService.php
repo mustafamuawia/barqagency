@@ -6,14 +6,19 @@ use App\DTOs\Wallet\TopUpData;
 use App\Exceptions\MissingAgencyException;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use App\Models\WalletTransactionType;
+use App\Models\TravelAgency;
 use App\Services\Audit\AuditLogger;
+use App\Services\Pdf\PdfRenderer;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
 
 class WalletService
 {
-    public function __construct(private readonly AuditLogger $audit)
+    public function __construct(private readonly AuditLogger $audit, private readonly PdfRenderer $pdfRenderer)
     {
     }
 
@@ -87,5 +92,208 @@ class WalletService
         $this->audit->log('wallet.credit_limit_changed', $wallet, ['credit_limit' => $previousLimit], ['credit_limit' => $creditLimit]);
 
         return $wallet;
+    }
+
+    public function submitDeposit(User $user, float $amount, string $referenceNumber, ?string $receiptPath = null): WalletTransaction
+    {
+        $wallet = $this->myWallet($user);
+
+        return DB::transaction(function () use ($wallet, $amount, $referenceNumber, $receiptPath, $user) {
+            $type = WalletTransactionType::firstOrCreate(['name' => 'deposit_pending'], ['label' => 'إيداع قيد المراجعة']);
+
+            $tx = $wallet->transactions()->create([
+                'uuid' => Str::uuid(),
+                'transaction_type_id' => $type->id,
+                'amount' => $amount,
+                'balance_after' => $wallet->balance, // balance unchanged until approved
+                'description' => "مرجع التحويل: {$referenceNumber}",
+                'metadata' => [
+                    'reference_number' => $referenceNumber,
+                    'receipt_path' => $receiptPath,
+                    'status' => 'pending',
+                ],
+                'created_by' => $user->id,
+                'created_at' => now(),
+            ]);
+
+            $this->audit->log('wallet.deposit_notice_submitted', $wallet, [], [
+                'amount' => $amount,
+                'reference_number' => $referenceNumber,
+                'transaction_id' => $tx->id,
+            ]);
+
+            return $tx;
+        });
+    }
+
+    public function listPendingDeposits()
+    {
+        return \App\Models\WalletTransaction::whereHas('transactionType', function ($q) {
+            $q->where('name', 'deposit_pending');
+        })
+        ->whereJsonContains('metadata->status', 'pending')
+        ->with(['wallet.agency', 'createdBy'])
+        ->latest('created_at')
+        ->get();
+    }
+
+    public function listMyDeposits(User $user, ?string $from = null, ?string $to = null)
+    {
+        $wallet = $this->myWallet($user);
+
+        return WalletTransaction::where('wallet_id', $wallet->id)
+            ->whereHas('transactionType', function ($q) {
+                $q->where('name', 'deposit_pending');
+            })
+            ->when($from, fn ($q) => $q->where('created_at', '>=', Carbon::parse($from)->startOfDay()))
+            ->when($to, fn ($q) => $q->where('created_at', '<=', Carbon::parse($to)->endOfDay()))
+            ->with('createdBy')
+            ->latest('created_at')
+            ->get();
+    }
+
+    public function listAllDeposits(?string $from = null, ?string $to = null, ?int $agencyId = null)
+    {
+        return WalletTransaction::whereHas('transactionType', function ($q) {
+            $q->where('name', 'deposit_pending');
+        })
+        ->when($from, fn ($q) => $q->where('created_at', '>=', Carbon::parse($from)->startOfDay()))
+        ->when($to, fn ($q) => $q->where('created_at', '<=', Carbon::parse($to)->endOfDay()))
+        ->when($agencyId, fn ($q) => $q->whereHas('wallet', fn ($w) => $w->where('agency_id', $agencyId)))
+        ->with(['wallet.agency', 'createdBy'])
+        ->latest('created_at')
+        ->get();
+    }
+
+    private function depositsReportData($deposits, ?string $from, ?string $to, ?string $agencyName): array
+    {
+        return [
+            'from' => $from,
+            'to' => $to,
+            'agencyName' => $agencyName,
+            'deposits' => $deposits->map(fn (WalletTransaction $dep) => [
+                'agency_name' => $dep->wallet?->agency?->name,
+                'date' => $dep->created_at->toDateTimeString(),
+                'reference_number' => $dep->metadata['reference_number'] ?? '—',
+                'amount' => (float) $dep->amount,
+                'status_label' => match ($dep->metadata['status'] ?? null) {
+                    'approved' => 'مقبول',
+                    'rejected' => 'مرفوض',
+                    default => 'قيد المراجعة',
+                },
+            ])->values()->all(),
+        ];
+    }
+
+    public function renderAllDepositsPdf(?string $from, ?string $to, ?int $agencyId)
+    {
+        $deposits = $this->listAllDeposits($from, $to, $agencyId);
+        $agencyName = $agencyId ? TravelAgency::find($agencyId)?->name : null;
+        $data = $this->depositsReportData($deposits, $from, $to, $agencyName);
+
+        return $this->pdfRenderer->render('reports.deposits', $data, $this->depositsFilename($from, $to));
+    }
+
+    public function renderAllDepositsCsv(?string $from, ?string $to, ?int $agencyId)
+    {
+        $deposits = $this->listAllDeposits($from, $to, $agencyId);
+        $agencyName = $agencyId ? TravelAgency::find($agencyId)?->name : null;
+
+        return $this->depositsCsvResponse($this->depositsReportData($deposits, $from, $to, $agencyName));
+    }
+
+    public function renderMyDepositsPdf(User $user, ?string $from, ?string $to)
+    {
+        $deposits = $this->listMyDeposits($user, $from, $to);
+        $agencyName = $user->agencies()->first()?->name;
+        $data = $this->depositsReportData($deposits, $from, $to, $agencyName);
+
+        return $this->pdfRenderer->render('reports.deposits', $data, $this->depositsFilename($from, $to));
+    }
+
+    public function renderMyDepositsCsv(User $user, ?string $from, ?string $to)
+    {
+        $deposits = $this->listMyDeposits($user, $from, $to);
+        $agencyName = $user->agencies()->first()?->name;
+
+        return $this->depositsCsvResponse($this->depositsReportData($deposits, $from, $to, $agencyName));
+    }
+
+    private function depositsCsvResponse(array $data)
+    {
+        $csv = fopen('php://temp', 'w+');
+        fputcsv($csv, ['Agency', 'Date', 'Reference Number', 'Amount', 'Status']);
+        foreach ($data['deposits'] as $dep) {
+            fputcsv($csv, [$dep['agency_name'], $dep['date'], $dep['reference_number'], $dep['amount'], $dep['status_label']]);
+        }
+        rewind($csv);
+        $content = stream_get_contents($csv);
+        fclose($csv);
+
+        return Response::make($content, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $this->depositsFilename($data['from'], $data['to'], 'csv') . '"',
+        ]);
+    }
+
+    private function depositsFilename(?string $from, ?string $to, string $ext = 'pdf'): string
+    {
+        return 'deposits-' . ($from ?: 'all') . '-to-' . ($to ?: 'all') . '.' . $ext;
+    }
+
+    public function approveDeposit(int $transactionId): Wallet
+    {
+        return DB::transaction(function () use ($transactionId) {
+            $pendingTx = \App\Models\WalletTransaction::findOrFail($transactionId);
+            $wallet = Wallet::where('id', $pendingTx->wallet_id)->lockForUpdate()->firstOrFail();
+
+            $topUpType = WalletTransactionType::firstOrCreate(['name' => 'topup'], ['label' => 'Top-Up']);
+            $newBalance = $wallet->balance + $pendingTx->amount;
+            $refNum = $pendingTx->metadata['reference_number'] ?? $pendingTx->id;
+
+            // Mark the pending notice as approved via raw DB to bypass immutability guard
+            DB::table('wallet_transactions')->where('id', $pendingTx->id)->update([
+                'metadata' => json_encode(array_merge($pendingTx->metadata ?? [], [
+                    'status' => 'approved',
+                    'approved_at' => now()->toDateTimeString(),
+                ])),
+            ]);
+
+            // Create the actual credit transaction
+            $wallet->transactions()->create([
+                'uuid' => Str::uuid(),
+                'transaction_type_id' => $topUpType->id,
+                'amount' => $pendingTx->amount,
+                'balance_after' => $newBalance,
+                'description' => "موافقة الإيداع (مرجع: {$refNum})",
+                'created_by' => auth()->id(),
+                'created_at' => now(),
+            ]);
+
+            $wallet->update(['balance' => $newBalance]);
+
+            $this->audit->log('wallet.deposit_approved', $wallet, [], [
+                'amount' => (float) $pendingTx->amount,
+                'new_balance' => $newBalance,
+                'ref' => $refNum,
+            ]);
+
+            return $wallet->fresh();
+        });
+    }
+
+    public function rejectDeposit(int $transactionId, ?string $reason = null): \App\Models\WalletTransaction
+    {
+        $tx = \App\Models\WalletTransaction::findOrFail($transactionId);
+
+        DB::table('wallet_transactions')->where('id', $tx->id)->update([
+            'metadata' => json_encode(array_merge($tx->metadata ?? [], [
+                'status' => 'rejected',
+                'rejection_reason' => $reason ?? 'مرفوض من قبل المحاسبة',
+                'rejected_at' => now()->toDateTimeString(),
+            ])),
+        ]);
+
+        return $tx->fresh();
     }
 }

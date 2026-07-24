@@ -8,7 +8,8 @@
     <div class="header">
         <div class="brand">Barq Agency</div>
         <div class="subtitle">B2B Travel & Tourism Portal</div>
-        <div class="doc-title">سند استرداد / Credit Note</div>
+        <div class="doc-title" dir="rtl">سند استرداد</div>
+        <div class="doc-subtitle" dir="ltr">Credit Note</div>
     </div>
 
     <div class="card">
@@ -72,8 +73,8 @@
         </div>
     </div>
 
-    <div class="footer">
-        هذا المستند تم إنشاؤه آلياً بواسطة نظام Barq Agency ولا يتطلب توقيعاً. &nbsp;|&nbsp; © {{ date('Y') }} Barq Agency
+    <div class="footer" dir="rtl">
+        هذا المستند تم إنشاؤه آلياً بواسطة نظام <span dir="ltr">Barq Agency</span> ولا يتطلب توقيعاً. &nbsp;|&nbsp; <span dir="ltr">© {{ date('Y') }} Barq Agency</span>
     </div>
 </body>
 </html>

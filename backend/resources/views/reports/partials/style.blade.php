@@ -46,6 +46,13 @@
         margin-top: 8px;
     }
 
+    .header .doc-subtitle {
+        font-size: 11px;
+        color: #cbd5e1;
+        text-align: left;
+        margin-top: 2px;
+    }
+
     .card {
         border: 1px solid #e2e8f0;
         border-radius: 10px;
@@ -71,13 +78,14 @@
         font-size: 10px;
         padding: 8px;
         border-bottom: 1px solid #e2e8f0;
-        text-align: right;
+        text-align: center;
     }
 
     table.data td {
         padding: 8px;
         font-size: 10px;
         border-bottom: 1px solid #f1f5f9;
+        text-align: center;
     }
 
     .row {

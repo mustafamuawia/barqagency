@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Wallet;
 
 use App\DTOs\Wallet\TopUpData;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Wallet\DepositFilterRequest;
 use App\Http\Requests\Api\V1\Wallet\SetCreditLimitRequest;
 use App\Http\Requests\Api\V1\Wallet\TopUpRequest;
 use App\Http\Resources\Api\V1\Wallet\WalletResource;
@@ -55,6 +56,111 @@ class WalletController extends Controller
         return response()->json([
             'message' => 'Credit limit updated',
             'wallet' => new WalletResource($wallet),
+        ]);
+    }
+
+    public function submitDeposit(\App\Http\Requests\Api\V1\Wallet\SubmitDepositRequest $request)
+    {
+        $receiptPath = null;
+        if ($request->hasFile('receipt')) {
+            $receiptPath = $request->file('receipt')->store('receipts', 'public');
+        }
+
+        $transaction = $this->walletService->submitDeposit(
+            $request->user(),
+            (float) $request->validated('amount'),
+            $request->validated('reference_number'),
+            $receiptPath
+        );
+
+        return response()->json([
+            'message' => 'Deposit notice submitted successfully',
+            'transaction' => $transaction,
+        ], 201);
+    }
+
+    public function myDeposits(DepositFilterRequest $request)
+    {
+        $deposits = $this->walletService->listMyDeposits(
+            $request->user(),
+            $request->validated('from'),
+            $request->validated('to')
+        );
+
+        return response()->json($deposits);
+    }
+
+    public function myDepositsPdf(DepositFilterRequest $request)
+    {
+        return $this->walletService->renderMyDepositsPdf(
+            $request->user(),
+            $request->validated('from'),
+            $request->validated('to')
+        );
+    }
+
+    public function myDepositsCsv(DepositFilterRequest $request)
+    {
+        return $this->walletService->renderMyDepositsCsv(
+            $request->user(),
+            $request->validated('from'),
+            $request->validated('to')
+        );
+    }
+
+    public function pendingDeposits()
+    {
+        $deposits = $this->walletService->listPendingDeposits();
+
+        return response()->json($deposits);
+    }
+
+    public function allDeposits(DepositFilterRequest $request)
+    {
+        $deposits = $this->walletService->listAllDeposits(
+            $request->validated('from'),
+            $request->validated('to'),
+            $request->validated('agency_id')
+        );
+
+        return response()->json($deposits);
+    }
+
+    public function allDepositsPdf(DepositFilterRequest $request)
+    {
+        return $this->walletService->renderAllDepositsPdf(
+            $request->validated('from'),
+            $request->validated('to'),
+            $request->validated('agency_id')
+        );
+    }
+
+    public function allDepositsCsv(DepositFilterRequest $request)
+    {
+        return $this->walletService->renderAllDepositsCsv(
+            $request->validated('from'),
+            $request->validated('to'),
+            $request->validated('agency_id')
+        );
+    }
+
+    public function approveDeposit($transactionId)
+    {
+        $wallet = $this->walletService->approveDeposit((int) $transactionId);
+
+        return response()->json([
+            'message' => 'Deposit request approved and wallet topped up successfully',
+            'wallet' => $wallet,
+        ]);
+    }
+
+    public function rejectDeposit(Request $request, $transactionId)
+    {
+        $tx = $this->walletService->rejectDeposit((int) $transactionId, $request->input('reason'));
+
+        return response()->json([
+            'message' => 'Deposit request rejected',
+            'transaction' => $tx,
         ]);
     }
 }

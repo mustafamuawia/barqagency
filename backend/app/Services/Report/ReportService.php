@@ -7,13 +7,17 @@ use App\Models\Order;
 use App\Models\TravelAgency;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Services\Pdf\PdfRenderer;
 use App\Traits\AuthorizesAgencyOwnership;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Response;
 
 class ReportService
 {
     use AuthorizesAgencyOwnership;
+
+    public function __construct(private readonly PdfRenderer $pdfRenderer)
+    {
+    }
 
     public function summary(User $user, ReportFilterData $filter): array
     {
@@ -49,8 +53,7 @@ class ReportService
     {
         $data = $this->summary($user, $filter);
 
-        return Pdf::loadView('reports.financial-summary', $data)
-            ->download("financial-summary-{$data['from']}-to-{$data['to']}.pdf");
+        return $this->pdfRenderer->render('reports.financial-summary', $data, "financial-summary-{$data['from']}-to-{$data['to']}.pdf");
     }
 
     public function renderCsv(User $user, ReportFilterData $filter)

@@ -6,9 +6,9 @@
       <header class="bg-[#0f172a] text-white py-3 px-4 md:px-8 flex items-center justify-between shadow-md">
         <!-- Left: Action Buttons -->
         <div class="flex items-center gap-2">
-          <a href="#" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-5 py-2 rounded-xl text-xs sm:text-sm transition shadow-sm">
+          <router-link to="/register" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-5 py-2 rounded-xl text-xs sm:text-sm transition shadow-sm">
             إنشاء حساب مجاناً
-          </a>
+          </router-link>
           <a href="#" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-5 py-2 rounded-xl text-xs sm:text-sm border border-slate-700 transition">
             تسجيل الدخول
           </a>

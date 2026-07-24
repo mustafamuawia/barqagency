@@ -86,13 +86,65 @@
         اختر وكالة لعرض معلومات المحفظة
       </Card>
     </div>
+
+    <!-- Pending Agency Deposit Requests Table -->
+    <Card class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-sm text-slate-900">طلبات وإشعارات الإيداع المعلقة (طلبات الوكلاء)</h3>
+        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
+          {{ pendingDeposits.length }} طلب معلق
+        </span>
+      </div>
+
+      <div v-if="!pendingDeposits.length" class="text-center text-slate-400 text-sm py-6">
+        لا توجد إشعارات إيداع معلقة بانتظار المراجعة
+      </div>
+
+      <div v-else class="overflow-x-auto rounded-xl border border-slate-200">
+        <table class="w-full text-right text-xs">
+          <thead class="bg-slate-50 text-slate-600 border-b">
+            <tr>
+              <th class="p-3 font-bold">الوكالة</th>
+              <th class="p-3 font-bold">التاريخ</th>
+              <th class="p-3 font-bold">رقم الإسناد / التحويل</th>
+              <th class="p-3 font-bold">المبلغ المطلوب</th>
+              <th class="p-3 font-bold">الإيصال</th>
+              <th class="p-3 font-bold text-center">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr v-for="dep in pendingDeposits" :key="dep.id" class="hover:bg-slate-50 transition">
+              <td class="p-3 font-bold text-slate-800">{{ dep.wallet?.agency?.name || 'وكالة غير معروفة' }}</td>
+              <td class="p-3 text-slate-500 font-mono">{{ formatDate(dep.created_at) }}</td>
+              <td class="p-3 font-mono font-bold text-slate-700">{{ dep.metadata?.reference_number || dep.id }}</td>
+              <td class="p-3 font-mono font-black text-emerald-600">${{ parseFloat(dep.amount).toFixed(2) }}</td>
+              <td class="p-3">
+                <a v-if="dep.metadata?.receipt_path" :href="`/storage/${dep.metadata.receipt_path}`" target="_blank" class="text-amber-600 font-bold hover:underline inline-flex items-center gap-1">
+                  <FileText class="w-3.5 h-3.5" />
+                  عرض الإيصال
+                </a>
+                <span v-else class="text-slate-400">بدون مرفق</span>
+              </td>
+              <td class="p-3 flex items-center justify-center gap-2">
+                <button @click="approveDeposit(dep.id)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                  موافقة وشحن
+                </button>
+                <button @click="rejectDeposit(dep.id)" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                  رفض
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/lib/api'
-import { Wallet } from 'lucide-vue-next'
+import { Wallet, FileText } from 'lucide-vue-next'
 import PageHeader from '@/components/PageHeader.vue'
 import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
@@ -105,13 +157,24 @@ const topUpDescription = ref('')
 const topUpLoading = ref(false)
 const message = ref('')
 const messageClass = ref('')
+const pendingDeposits = ref([])
+
+const loadPendingDeposits = async () => {
+  try {
+    const res = await api.get('/wallets/pending-deposits')
+    pendingDeposits.value = res.data
+  } catch (err) {
+    console.error('Failed to load pending deposits', err)
+  }
+}
 
 onMounted(async () => {
   try {
     const response = await api.get('/agencies')
     agencies.value = response.data
+    await loadPendingDeposits()
   } catch (err) {
-    message.value = 'فشل تحميل الوكالات'
+    message.value = 'فشل تحميل البيانات'
     messageClass.value = 'bg-red-100 text-red-700'
   }
 })
@@ -150,5 +213,32 @@ const submitTopUp = async () => {
   }
 }
 
+const approveDeposit = async (transactionId) => {
+  try {
+    await api.put(`/wallets/deposits/${transactionId}/approve`)
+    message.value = 'تمت الموافقة على طلب الإيداع وشحن محفظة الوكيل بنجاح!'
+    messageClass.value = 'bg-emerald-100 text-emerald-700'
+    await loadPendingDeposits()
+    if (selectedAgencyId.value) loadWallet()
+  } catch (err) {
+    message.value = err.response?.data?.message || 'فشل قبول الإيداع'
+    messageClass.value = 'bg-red-100 text-red-700'
+  }
+}
+
+const rejectDeposit = async (transactionId) => {
+  const reason = prompt('سبب الرفض (اختياري):')
+  try {
+    await api.put(`/wallets/deposits/${transactionId}/reject`, { reason })
+    message.value = 'تم رفض طلب الإيداع.'
+    messageClass.value = 'bg-amber-100 text-amber-800'
+    await loadPendingDeposits()
+  } catch (err) {
+    message.value = err.response?.data?.message || 'فشل رفض الإيداع'
+    messageClass.value = 'bg-red-100 text-red-700'
+  }
+}
+
 const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
+const formatDate = (date) => new Date(date).toLocaleString('ar-SA')
 </script>

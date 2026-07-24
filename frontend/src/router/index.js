@@ -13,6 +13,11 @@ const routes = [
     meta: { public: true },
   },
   {
+    path: '/register',
+    component: () => import('@/views/RegisterPage.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/forgot-password',
     component: () => import('@/views/ForgotPasswordPage.vue'),
     meta: { public: true },

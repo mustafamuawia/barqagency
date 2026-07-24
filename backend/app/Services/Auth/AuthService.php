@@ -29,6 +29,67 @@ class AuthService
         ];
     }
 
+    public function registerAgency(array $data): array
+    {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+            $userType = \App\Models\UserType::where('name', 'agency')->first();
+
+            $user = User::create([
+                'uuid' => \Illuminate\Support\Str::uuid(),
+                'name' => $data['agency_name'],
+                'email' => $data['email'],
+                'password' => \Illuminate\Support\Facades\Hash::make($data['password']),
+                'user_type_id' => $userType?->id,
+            ]);
+
+            // Assign role if spatie HasRoles trait exists on model, otherwise user_type_id is set
+            if (method_exists($user, 'assignRole')) {
+                $user->assignRole('agency');
+            }
+
+            $agencyType = \App\Models\AgencyType::first();
+
+            // Create Travel Agency
+            $agency = \App\Models\TravelAgency::create([
+                'uuid' => \Illuminate\Support\Str::uuid(),
+                'name' => $data['agency_name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'] ?? null,
+                'address' => $data['address'] ?? null,
+                'agency_type_id' => $agencyType?->id,
+                'status' => 'active',
+                'created_by' => $user->id,
+            ]);
+
+            // Associate user with agency
+            \App\Models\AgencyUser::create([
+                'agency_id' => $agency->id,
+                'user_id' => $user->id,
+                'role' => 'owner',
+            ]);
+
+            // Create Wallet for agency
+            \App\Models\Wallet::create([
+                'uuid' => \Illuminate\Support\Str::uuid(),
+                'agency_id' => $agency->id,
+                'balance' => 0.000,
+                'paid_balance' => 0.000,
+                'unpaid_balance' => 0.000,
+                'credit_limit' => 5000.000,
+                'created_by' => $user->id,
+            ]);
+
+            $this->audit->log('auth.register_agency', $user, [], ['agency_id' => $agency->id]);
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return [
+                'token' => $token,
+                'user' => $user->fresh(['userType', 'agencies']),
+            ];
+        });
+    }
+
     public function logout(User $user): void
     {
         $this->audit->log('auth.logout', $user);

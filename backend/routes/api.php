@@ -16,6 +16,7 @@ Route::get('/health', fn() => response()->json(['status' => 'ok']));
 
 Route::prefix('v1')->group(function () {
     Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/register', [\App\Http\Controllers\Api\V1\Auth\RegisterController::class, 'registerAgency'])->middleware('throttle:10,1');
     Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->middleware('throttle:5,1');
 
@@ -32,6 +33,16 @@ Route::prefix('v1')->group(function () {
 
         // Wallets
         Route::get('/wallets', [WalletController::class, 'myWallet'])->middleware('role:agency');
+        Route::post('/wallets/deposit', [WalletController::class, 'submitDeposit'])->middleware('role:agency');
+        Route::get('/wallets/my-deposits', [WalletController::class, 'myDeposits'])->middleware('role:agency');
+        Route::get('/wallets/my-deposits/pdf', [WalletController::class, 'myDepositsPdf'])->middleware('role:agency');
+        Route::get('/wallets/my-deposits/csv', [WalletController::class, 'myDepositsCsv'])->middleware('role:agency');
+        Route::get('/wallets/pending-deposits', [WalletController::class, 'pendingDeposits'])->middleware('role:admin');
+        Route::get('/wallets/all-deposits', [WalletController::class, 'allDeposits'])->middleware('role:admin');
+        Route::get('/wallets/all-deposits/pdf', [WalletController::class, 'allDepositsPdf'])->middleware('role:admin');
+        Route::get('/wallets/all-deposits/csv', [WalletController::class, 'allDepositsCsv'])->middleware('role:admin');
+        Route::put('/wallets/deposits/{id}/approve', [WalletController::class, 'approveDeposit'])->middleware('role:admin');
+        Route::put('/wallets/deposits/{id}/reject', [WalletController::class, 'rejectDeposit'])->middleware('role:admin');
         Route::get('/wallets/{wallet}', [WalletController::class, 'show'])->middleware('role:admin');
         Route::get('/wallets/agency/{agency}', [WalletController::class, 'showByAgency'])->middleware('role:admin');
         Route::post('/wallets/{wallet}/topup', [WalletController::class, 'topUp'])->middleware('role:admin');

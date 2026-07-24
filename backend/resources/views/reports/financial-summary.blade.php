@@ -8,7 +8,8 @@
     <div class="header">
         <div class="brand">Barq Agency</div>
         <div class="subtitle">B2B Travel & Tourism Portal</div>
-        <div class="doc-title">التقرير المالي / Financial Report</div>
+        <div class="doc-title" dir="rtl">التقرير المالي</div>
+        <div class="doc-subtitle" dir="ltr">Financial Report</div>
     </div>
 
     <div class="card">
@@ -78,8 +79,8 @@
         </table>
     </div>
 
-    <div class="footer">
-        هذا التقرير تم إنشاؤه آلياً بواسطة نظام Barq Agency &nbsp;|&nbsp; © {{ date('Y') }} Barq Agency
+    <div class="footer" dir="rtl">
+        هذا التقرير تم إنشاؤه آلياً بواسطة نظام <span dir="ltr">Barq Agency</span> &nbsp;|&nbsp; <span dir="ltr">© {{ date('Y') }} Barq Agency</span>
     </div>
 </body>
 </html>

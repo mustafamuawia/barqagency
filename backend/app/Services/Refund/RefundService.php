@@ -16,8 +16,8 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransactionType;
 use App\Services\Audit\AuditLogger;
+use App\Services\Pdf\PdfRenderer;
 use App\Traits\AuthorizesAgencyOwnership;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -28,7 +28,7 @@ class RefundService
 
     private const ELIGIBLE_ORDER_STATUSES = ['approved', 'confirmed'];
 
-    public function __construct(private readonly AuditLogger $audit)
+    public function __construct(private readonly AuditLogger $audit, private readonly PdfRenderer $pdfRenderer)
     {
     }
 
@@ -170,8 +170,7 @@ class RefundService
 
         $refund->load(['order', 'agency', 'status', 'decidedBy']);
 
-        return Pdf::loadView('reports.credit-note', ['refund' => $refund])
-            ->download("credit-note-{$refund->refund_number}.pdf");
+        return $this->pdfRenderer->render('reports.credit-note', ['refund' => $refund], "credit-note-{$refund->refund_number}.pdf");
     }
 
     public function reject(Refund $refund, string $adminRemarks): Refund
