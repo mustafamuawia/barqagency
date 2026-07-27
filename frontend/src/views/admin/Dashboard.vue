@@ -16,7 +16,7 @@
 
     <template v-else>
       <!-- Stats Grid -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatTile
           :icon="ClipboardList"
           icon-bg="bg-amber-100"
@@ -27,6 +27,19 @@
           :large="true"
           :mono="false"
         />
+        <router-link to="/admin/agencies">
+          <StatTile
+            :icon="Users"
+            icon-bg="bg-purple-100"
+            icon-color="text-purple-600"
+            label="وكالات جديدة"
+            :value="stats.pendingAgencies"
+            caption="بانتظار الموافقة"
+            value-color="text-purple-600"
+            :large="true"
+            :mono="false"
+          />
+        </router-link>
         <StatTile
           :icon="RotateCcw"
           icon-bg="bg-yellow-100"
@@ -140,7 +153,7 @@ import DataTable from '@/components/DataTable.vue'
 import Button from '@/components/Button.vue'
 
 const loading = ref(true)
-const stats = ref({ pendingOrders: 0, pendingRefunds: 0, pendingTopups: 0, totalBalance: 0 })
+const stats = ref({ pendingOrders: 0, pendingRefunds: 0, pendingAgencies: 0, pendingTopups: 0, totalBalance: 0 })
 const financials = ref({ totalBookings: 0, totalRefunds: 0 })
 const recentOrders = ref([])
 

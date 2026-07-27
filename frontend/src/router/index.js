@@ -28,6 +28,11 @@ const routes = [
     meta: { public: true },
   },
   {
+    path: '/verify-email',
+    component: () => import('@/views/VerifyEmailPage.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/admin',
     component: () => import('@/layouts/AdminLayout.vue'),
     meta: { requireRole: 'admin' },
@@ -51,6 +56,7 @@ const routes = [
     component: () => import('@/layouts/AgencyLayout.vue'),
     meta: { requireRole: 'agency' },
     children: [
+      { path: 'pending', name: 'agency.pending', component: () => import('@/views/agency/AccountPending.vue') },
       { path: '', name: 'agency.dashboard', component: () => import('@/views/agency/Dashboard.vue') },
       { path: 'orders', name: 'agency.orders', component: () => import('@/views/agency/OrderList.vue') },
       { path: 'orders/new', name: 'agency.orders.new', component: () => import('@/views/agency/OrderForm.vue') },
@@ -90,6 +96,18 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requireRole === 'agency' && !auth.isAgency) {
     return { path: '/login' }
+  }
+
+  if (to.meta.requireRole === 'agency') {
+    const isActive = auth.agencyStatus === 'active'
+
+    if (!isActive && to.name !== 'agency.pending') {
+      return { name: 'agency.pending' }
+    }
+
+    if (isActive && to.name === 'agency.pending') {
+      return { path: '/agency' }
+    }
   }
 
   if (to.meta.requireRole === 'super_admin' && !auth.isSuperAdmin) {

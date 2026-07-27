@@ -9,7 +9,9 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\WalletTransactionType;
 use App\Models\TravelAgency;
+use App\Notifications\Admin\NewWalletDepositNotification;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notification\AdminNotifier;
 use App\Services\Pdf\PdfRenderer;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -19,8 +21,11 @@ use Illuminate\Support\Str;
 
 class WalletService
 {
-    public function __construct(private readonly AuditLogger $audit, private readonly PdfRenderer $pdfRenderer)
-    {
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly PdfRenderer $pdfRenderer,
+        private readonly AdminNotifier $adminNotifier,
+    ) {
     }
 
     public function myWallet(User $user): Wallet
@@ -133,6 +138,9 @@ class WalletService
                 'reference_number' => $referenceNumber,
                 'transaction_id' => $tx->id,
             ]);
+
+            $tx->load('wallet.agency');
+            $this->adminNotifier->send(new NewWalletDepositNotification($tx));
 
             return $tx;
         });

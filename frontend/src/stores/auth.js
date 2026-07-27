@@ -104,9 +104,38 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const verifyEmail = async (email, token) => {
+    try {
+      const response = await api.post('/verify-email', { email, token })
+      if (user.value) {
+        user.value = response.data.user
+      }
+      return { success: true, message: response.data.message }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'تعذر تفعيل البريد الإلكتروني',
+      }
+    }
+  }
+
+  const resendVerification = async () => {
+    try {
+      const response = await api.post('/resend-verification')
+      return { success: true, message: response.data.message }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'تعذر إرسال رابط التفعيل',
+      }
+    }
+  }
+
   const isSuperAdmin = computed(() => user.value?.user_type === 'super_admin')
   const isAdmin = computed(() => ['super_admin', 'admin'].includes(user.value?.user_type))
   const isAgency = computed(() => user.value?.user_type === 'b2b')
+  const agencyStatus = computed(() => user.value?.agency_status)
+  const emailVerified = computed(() => !!user.value?.email_verified)
 
   return {
     user,
@@ -115,6 +144,8 @@ export const useAuthStore = defineStore('auth', () => {
     isSuperAdmin,
     isAdmin,
     isAgency,
+    agencyStatus,
+    emailVerified,
     login,
     logout,
     fetchCurrentUser,
@@ -122,5 +153,7 @@ export const useAuthStore = defineStore('auth', () => {
     resetPassword,
     updateProfile,
     updatePassword,
+    verifyEmail,
+    resendVerification,
   }
 })

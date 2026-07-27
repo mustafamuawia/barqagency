@@ -200,6 +200,7 @@
           <span class="text-[10px] text-emerald-500/80 font-normal">إجمالي خزانة المنصة</span>
           <span class="font-bold font-mono">$45,200.00</span>
         </div>
+        <NotificationBell />
       </div>
     </header>
 
@@ -216,9 +217,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationsStore } from '@/stores/notifications'
+import NotificationBell from '@/components/NotificationBell.vue'
 import {
   Menu, X, ShieldCheck, LayoutDashboard, Ticket, Wallet, Users, UsersRound,
   Settings, ShieldAlert, LogOut, PlaneTakeoff, Shield, RotateCcw, FileText, History, UserCog
@@ -226,15 +229,27 @@ import {
 
 const router = useRouter()
 const auth = useAuthStore()
+const notifications = useNotificationsStore()
 const sidebarOpen = ref(false)
 
 const openSidebar = () => { sidebarOpen.value = true }
 const closeSidebar = () => { sidebarOpen.value = false }
 
 const logout = async () => {
+  notifications.disconnectRealtime()
   await auth.logout()
   router.push('/login')
 }
+
+onMounted(() => {
+  if (auth.user?.id) {
+    notifications.init(auth.user.id, auth.token)
+  }
+})
+
+onUnmounted(() => {
+  notifications.disconnectRealtime()
+})
 </script>
 
 <style scoped>

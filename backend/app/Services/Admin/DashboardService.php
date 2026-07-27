@@ -14,6 +14,7 @@ class DashboardService
     {
         $pendingOrders = Order::pendingPricing()->count();
         $pendingRefunds = Refund::pending()->count();
+        $pendingAgencies = TravelAgency::where('status', 'pending')->count();
         $totalBalance = Wallet::sum('balance');
 
         $recentOrders = Order::with(['agency', 'status'])
@@ -41,6 +42,7 @@ class DashboardService
             'stats' => [
                 'pendingOrders' => $pendingOrders,
                 'pendingRefunds' => $pendingRefunds,
+                'pendingAgencies' => $pendingAgencies,
                 'pendingTopups' => 0,
                 'totalBalance' => $totalBalance,
             ],

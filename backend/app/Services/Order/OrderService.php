@@ -15,8 +15,11 @@ use App\Models\OrderStatusHistory;
 use App\Models\QuoteStatus;
 use App\Models\User;
 use App\Models\WalletTransactionType;
+use App\Notifications\Admin\NewOrderRequestNotification;
+use App\Notifications\Admin\OrderApprovedNotification;
 use App\Traits\AuthorizesAgencyOwnership;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notification\AdminNotifier;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -25,7 +28,7 @@ class OrderService
 {
     use AuthorizesAgencyOwnership;
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(private readonly AuditLogger $audit, private readonly AdminNotifier $adminNotifier) {}
 
     public function listForUser(User $user): LengthAwarePaginator
     {
@@ -99,7 +102,11 @@ class OrderService
                 'created_at' => now(),
             ]);
 
-            return $order->load(['agency', 'status', 'segments', 'passengers']);
+            $order->load(['agency', 'status', 'segments', 'passengers']);
+
+            $this->adminNotifier->send(new NewOrderRequestNotification($order));
+
+            return $order;
         });
     }
 
@@ -190,7 +197,10 @@ class OrderService
                 'balance_after' => $newBalance,
             ]);
 
-            return $order->fresh(['status']);
+            $order = $order->fresh(['status', 'agency']);
+            $this->adminNotifier->send(new OrderApprovedNotification($order));
+
+            return $order;
         });
     }
 }

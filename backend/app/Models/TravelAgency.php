@@ -14,10 +14,11 @@ class TravelAgency extends Model
     use SoftDeletes, HasUuid;
 
     protected $table = 'travel_agencies';
-    protected $fillable = ['name', 'email', 'phone', 'address', 'agency_type_id', 'license_number', 'tax_id', 'status', 'credit_limit', 'metadata', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['name', 'email', 'phone', 'address', 'agency_type_id', 'license_number', 'tax_id', 'status', 'rejection_reason', 'reviewed_by', 'reviewed_at', 'credit_limit', 'metadata', 'created_by', 'updated_by', 'deleted_by'];
     protected $casts = [
         'metadata' => 'json',
         'phone'    => 'encrypted',
+        'reviewed_at' => 'datetime',
     ];
 
     public function agencyType(): BelongsTo
@@ -38,5 +39,15 @@ class TravelAgency extends Model
     public function users(): HasMany
     {
         return $this->hasMany(AgencyUser::class, 'agency_id');
+    }
+
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function ownerUser(): ?User
+    {
+        return $this->users()->where('role', 'owner')->first()?->user;
     }
 }

@@ -129,11 +129,11 @@ const handleRegister = async () => {
       localStorage.setItem('auth_token', response.data.token)
     }
 
-    successMessage.value = 'تم إنشاء حساب الوكالة بنجاح! جاري التوجيه إلى المحفظة...'
-    
+    successMessage.value = 'تم إنشاء حساب الوكالة بنجاح! يرجى تفعيل بريدك الإلكتروني عبر الرابط المرسل إليك لإكمال التسجيل.'
+
     setTimeout(() => {
-      router.push('/agency/wallet')
-    }, 1200)
+      router.push('/agency')
+    }, 1800)
   } catch (err) {
     errorMessage.value = err.response?.data?.message || 'حدث خطأ أثناء إكمال التسجيل.'
   } finally {

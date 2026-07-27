@@ -15,7 +15,9 @@ use App\Models\RefundStatus;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransactionType;
+use App\Notifications\Admin\NewRefundRequestNotification;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notification\AdminNotifier;
 use App\Services\Pdf\PdfRenderer;
 use App\Traits\AuthorizesAgencyOwnership;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -28,8 +30,11 @@ class RefundService
 
     private const ELIGIBLE_ORDER_STATUSES = ['approved', 'confirmed'];
 
-    public function __construct(private readonly AuditLogger $audit, private readonly PdfRenderer $pdfRenderer)
-    {
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly PdfRenderer $pdfRenderer,
+        private readonly AdminNotifier $adminNotifier,
+    ) {
     }
 
     public function listForUser(User $user): LengthAwarePaginator
@@ -112,7 +117,10 @@ class RefundService
             'original_amount' => (float) $refund->original_amount,
         ]);
 
-        return $refund->load(['order', 'status']);
+        $refund->load(['order', 'status', 'agency']);
+        $this->adminNotifier->send(new NewRefundRequestNotification($refund));
+
+        return $refund;
     }
 
     public function approve(Refund $refund, DecideRefundData $data): Refund

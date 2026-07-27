@@ -18,6 +18,9 @@ class UserResource extends JsonResource
             'email' => $this->resource->email,
             'user_type' => $this->resource->userType?->name,
             'agency_id' => $agency?->id,
+            'agency_status' => $agency?->status,
+            'agency_rejection_reason' => $agency?->rejection_reason,
+            'email_verified' => (bool) $this->resource->email_verified_at,
             'roles' => [],
             'permissions' => [],
         ];

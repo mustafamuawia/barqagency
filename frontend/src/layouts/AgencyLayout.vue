@@ -42,7 +42,7 @@
         </div>
 
         <!-- Nav Links -->
-        <nav class="px-3 space-y-1 text-xs font-semibold">
+        <nav v-if="auth.agencyStatus === 'active'" class="px-3 space-y-1 text-xs font-semibold">
           <router-link
             to="/agency"
             exact

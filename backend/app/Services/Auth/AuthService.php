@@ -2,15 +2,20 @@
 
 namespace App\Services\Auth;
 
+use App\Exceptions\EmailAlreadyVerifiedException;
 use App\Exceptions\InactiveAccountException;
 use App\Exceptions\InvalidCurrentPasswordException;
+use App\Exceptions\InvalidVerificationTokenException;
 use App\Models\User;
+use App\Notifications\Admin\NewAgencyPendingNotification;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notification\AdminNotifier;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AuthService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(private readonly AuditLogger $audit, private readonly AdminNotifier $adminNotifier) {}
 
     public function updateProfile(User $user, array $data): User
     {
@@ -64,7 +69,7 @@ class AuthService
     public function registerAgency(array $data): array
     {
         return \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
-            $userType = \App\Models\UserType::where('name', 'agency')->first();
+            $userType = \App\Models\UserType::where('name', 'b2b')->first();
 
             $user = User::create([
                 'uuid' => \Illuminate\Support\Str::uuid(),
@@ -73,6 +78,8 @@ class AuthService
                 'password' => \Illuminate\Support\Facades\Hash::make($data['password']),
                 'user_type_id' => $userType?->id,
             ]);
+
+            $user->forceFill(['email_verification_token' => Str::random(64)])->save();
 
             // Assign role if spatie HasRoles trait exists on model, otherwise user_type_id is set
             if (method_exists($user, 'assignRole')) {
@@ -89,7 +96,7 @@ class AuthService
                 'phone' => $data['phone'] ?? null,
                 'address' => $data['address'] ?? null,
                 'agency_type_id' => $agencyType?->id,
-                'status' => 'active',
+                'status' => 'pending',
                 'created_by' => $user->id,
             ]);
 
@@ -113,6 +120,9 @@ class AuthService
 
             $this->audit->log('auth.register_agency', $user, [], ['agency_id' => $agency->id]);
 
+            $user->sendAgencyVerificationEmail();
+            $this->adminNotifier->send(new NewAgencyPendingNotification($agency));
+
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return [
@@ -120,6 +130,33 @@ class AuthService
                 'user' => $user->fresh(['userType', 'agencies']),
             ];
         });
+    }
+
+    public function verifyEmail(string $email, string $token): User
+    {
+        $user = User::where('email', $email)->where('email_verification_token', $token)->first();
+
+        if (!$user) {
+            throw new InvalidVerificationTokenException();
+        }
+
+        $user->forceFill(['email_verified_at' => now(), 'email_verification_token' => null])->save();
+
+        $this->audit->log('auth.email_verified', $user);
+
+        return $user->fresh(['userType', 'agencies']);
+    }
+
+    public function resendVerificationEmail(User $user): void
+    {
+        if ($user->email_verified_at) {
+            throw new EmailAlreadyVerifiedException();
+        }
+
+        $user->forceFill(['email_verification_token' => Str::random(64)])->save();
+        $user->sendAgencyVerificationEmail();
+
+        $this->audit->log('auth.resend_verification', $user);
     }
 
     public function logout(User $user): void

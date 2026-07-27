@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasUuid;
 use App\Notifications\ResetPasswordNotification;
+use App\Notifications\VerifyAgencyEmailNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -59,8 +60,18 @@ class User extends Authenticatable
         return $this->userType?->name === 'b2b';
     }
 
+    public function scopeAdmins($query)
+    {
+        return $query->whereHas('userType', fn ($q) => $q->whereIn('name', ['super_admin', 'admin']));
+    }
+
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));
+    }
+
+    public function sendAgencyVerificationEmail(): void
+    {
+        $this->notify(new VerifyAgencyEmailNotification($this->email_verification_token));
     }
 }
