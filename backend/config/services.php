@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'ignav' => [
+        'key' => env('IGNAV_API_KEY'),
+        'base_url' => env('IGNAV_BASE_URL', 'https://ignav.com/api'),
+        'market' => env('IGNAV_MARKET', 'US'),
+        'markup_percent' => (float) env('IGNAV_MARKUP_PERCENT', 0),
+    ],
+
 ];

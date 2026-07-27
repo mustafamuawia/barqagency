@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Api\V1\Admin\AuditLogController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController;
-use App\Http\Controllers\Api\V1\Admin\MockFlightController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Agency\AgencyController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
@@ -39,6 +38,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/orders', [OrderController::class, 'index']);
         Route::get('/orders/{order}', [OrderController::class, 'show']);
         Route::post('/orders', [OrderController::class, 'store'])->middleware(['role:agency', 'agency.active']);
+        Route::post('/orders/book-itinerary', [OrderController::class, 'bookItinerary'])->middleware(['role:agency', 'agency.active']);
         Route::put('/orders/{order}/quote', [OrderController::class, 'submitQuote'])->middleware('role:admin');
         Route::put('/orders/{order}/approve', [OrderController::class, 'approveOrder'])->middleware(['role:agency', 'agency.active']);
 
@@ -112,13 +112,5 @@ Route::prefix('v1')->group(function () {
         // Admin audit trail
         Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->middleware('role:admin');
         Route::get('/admin/login-history', [AuditLogController::class, 'loginHistory'])->middleware('role:admin');
-
-        // Admin mock flight offers (search & pricing data shown on the public landing page)
-        Route::middleware('role:admin')->group(function () {
-            Route::get('/admin/mock-flights', [MockFlightController::class, 'index']);
-            Route::post('/admin/mock-flights', [MockFlightController::class, 'store']);
-            Route::put('/admin/mock-flights/{mockFlight}', [MockFlightController::class, 'update']);
-            Route::delete('/admin/mock-flights/{mockFlight}', [MockFlightController::class, 'destroy']);
-        });
     });
 });

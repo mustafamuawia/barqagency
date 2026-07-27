@@ -97,16 +97,6 @@
           </router-link>
 
           <router-link
-            to="/admin/mock-flights"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
-            :class="$route.path === '/admin/mock-flights' ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
-            @click="closeSidebar"
-          >
-            <PlaneTakeoff class="w-4 h-4 text-cyan-400" />
-            <span>مسارات البحث والأسعار</span>
-          </router-link>
-
-          <router-link
             v-if="auth.isSuperAdmin"
             to="/admin/users"
             class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"

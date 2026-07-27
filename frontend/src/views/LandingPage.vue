@@ -416,12 +416,14 @@ const destinations = [
   { name: 'القاهرة', image: 'https://images.unsplash.com/photo-1572252821128-d762e5b8d2bb?auto=format&fit=crop&w=600&q=80' },
 ]
 
+const todayStr = () => new Date().toISOString().slice(0, 10)
+
 const tripType = ref('roundtrip')
 const searchForm = ref({
   from: '',
   to: '',
-  departDate: '',
-  returnDate: '',
+  departDate: todayStr(),
+  returnDate: todayStr(),
   cabinPassengers: '1-economy',
 })
 
@@ -453,6 +455,12 @@ const onSearch = async () => {
     searchError.value = 'يجب أن تختلف نقطة الانطلاق عن نقطة الوصول'
     return
   }
+  if (!searchForm.value.departDate || (tripType.value === 'roundtrip' && !searchForm.value.returnDate)) {
+    searched.value = true
+    results.value = []
+    searchError.value = 'يرجى تحديد تاريخ السفر'
+    return
+  }
 
   const [passengers, cabin] = searchForm.value.cabinPassengers.split('-')
 
@@ -463,9 +471,11 @@ const onSearch = async () => {
       params: {
         origin,
         destination,
-        trip_type: tripType.value,
+        trip_type: tripType.value === 'multi' ? 'oneway' : tripType.value,
         cabin,
         passengers: Number(passengers),
+        departure_date: searchForm.value.departDate,
+        return_date: tripType.value === 'roundtrip' ? searchForm.value.returnDate : undefined,
       },
     })
     results.value = response.data.results

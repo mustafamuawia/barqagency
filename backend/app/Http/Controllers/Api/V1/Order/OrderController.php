@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1\Order;
 
+use App\DTOs\Order\BookItineraryData;
 use App\DTOs\Order\CreateOrderData;
 use App\DTOs\Order\SubmitQuoteData;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Order\StoreOrderFromItineraryRequest;
 use App\Http\Requests\Api\V1\Order\StoreOrderRequest;
 use App\Http\Requests\Api\V1\Order\SubmitQuoteRequest;
 use App\Http\Resources\Api\V1\Order\OrderResource;
@@ -38,6 +40,16 @@ class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order created',
+            'order' => new OrderResource($order),
+        ], 201);
+    }
+
+    public function bookItinerary(StoreOrderFromItineraryRequest $request)
+    {
+        $order = $this->orderService->bookItinerary($request->user(), BookItineraryData::fromRequest($request));
+
+        return response()->json([
+            'message' => 'Order created and priced',
             'order' => new OrderResource($order),
         ], 201);
     }
