@@ -18,7 +18,7 @@
             <p class="text-[9px] text-slate-400 font-light -mt-1">بوابة وكلاء B2B للسفر والسياحة</p>
           </div>
           <div class="bg-amber-500 text-slate-900 p-1.5 rounded-lg font-black text-xl flex items-center justify-center">
-            <PlaneTakeoff class="w-6 h-6" />
+            <BarqLogo class="w-6 h-6" />
           </div>
         </div>
       </header>
@@ -98,7 +98,8 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { PlaneTakeoff, UserPlus } from 'lucide-vue-next'
+import { UserPlus } from 'lucide-vue-next'
+import BarqLogo from '@/components/BarqLogo.vue'
 import api from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 

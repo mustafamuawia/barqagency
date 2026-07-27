@@ -21,7 +21,7 @@
             <p class="text-[9px] text-slate-400 font-light -mt-1">B2B Travel & Tourism Portal</p>
           </div>
           <div class="bg-amber-500 text-slate-900 p-1.5 rounded-lg flex items-center justify-center">
-            <PlaneTakeoff class="w-6 h-6" />
+            <BarqLogo class="w-6 h-6" />
           </div>
         </div>
       </header>
@@ -117,7 +117,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { PlaneTakeoff, KeyRound } from 'lucide-vue-next'
+import { KeyRound } from 'lucide-vue-next'
+import BarqLogo from '@/components/BarqLogo.vue'
 
 const router = useRouter()
 const auth = useAuthStore()

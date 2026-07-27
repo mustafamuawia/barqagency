@@ -172,7 +172,7 @@
         </button>
         <div class="flex items-center gap-2">
           <div class="bg-amber-500 text-slate-900 p-1.5 rounded-lg flex items-center justify-center">
-            <PlaneTakeoff class="w-6 h-6" />
+            <BarqLogo class="w-6 h-6" />
           </div>
           <div>
             <h1 class="text-2xl font-black tracking-wide text-amber-500">Barq Agency</h1>
@@ -214,8 +214,9 @@ import { useNotificationsStore } from '@/stores/notifications'
 import NotificationBell from '@/components/NotificationBell.vue'
 import {
   Menu, X, ShieldCheck, LayoutDashboard, Ticket, Wallet, Users, UsersRound,
-  Settings, ShieldAlert, LogOut, PlaneTakeoff, Shield, RotateCcw, FileText, History, UserCog
+  Settings, ShieldAlert, LogOut, Shield, RotateCcw, FileText, History, UserCog
 } from 'lucide-vue-next'
+import BarqLogo from '@/components/BarqLogo.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
