@@ -262,9 +262,10 @@
                     <p class="text-lg font-black text-emerald-600 font-mono">{{ formatPrice(r.total_price, r.currency) }}</p>
                     <p class="text-[10px] text-slate-400">{{ r.passengers }} مسافر × {{ formatPrice(r.unit_price, r.currency) }}</p>
                   </div>
-                  <router-link to="/register" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap transition">
+                  <!-- Hidden for now: booking isn't wired up for public search results yet -->
+                  <!-- <router-link to="/register" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap transition">
                     احجز الآن
-                  </router-link>
+                  </router-link> -->
                 </div>
               </div>
             </div>

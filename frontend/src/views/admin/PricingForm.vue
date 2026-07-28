@@ -48,6 +48,15 @@
             {{ seg.airline?.name }} • {{ seg.cabin_class?.name }}
           </div>
         </div>
+
+        <!-- Passengers -->
+        <div v-if="order.passengers?.length" class="space-y-2">
+          <p class="text-xs font-semibold text-slate-500">الركاب</p>
+          <div v-for="p in order.passengers" :key="p.id" class="bg-slate-50 rounded-xl p-3 text-xs text-slate-700 border border-slate-200 font-medium flex items-center justify-between">
+            <span>{{ p.first_name }} {{ p.last_name }}</span>
+            <span class="text-slate-400">{{ p.passenger_type?.name }}</span>
+          </div>
+        </div>
       </Card>
 
       <!-- Pricing Form -->

@@ -10,12 +10,12 @@ const routes = [
   {
     path: '/login',
     component: () => import('@/views/LoginPage.vue'),
-    meta: { public: true },
+    meta: { public: true, guestOnly: true },
   },
   {
     path: '/register',
     component: () => import('@/views/RegisterPage.vue'),
-    meta: { public: true },
+    meta: { public: true, guestOnly: true },
   },
   {
     path: '/forgot-password',
@@ -77,12 +77,18 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
-  if (to.meta.public) {
-    return true
-  }
-
   if (!auth.user && auth.token) {
     await auth.fetchCurrentUser()
+  }
+
+  if (to.meta.guestOnly && auth.isAuthenticated) {
+    if (auth.isAdmin) return { path: '/admin' }
+    if (auth.isAgency) return { path: '/agency' }
+    return { path: '/' }
+  }
+
+  if (to.meta.public) {
+    return true
   }
 
   if (!auth.isAuthenticated) {
