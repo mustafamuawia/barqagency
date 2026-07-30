@@ -41,25 +41,6 @@
             <p class="text-xs text-slate-400">يرجى تسجيل الدخول إلى منصة Barq Agency B2B لتتمكن من البحث والدفع</p>
           </div>
 
-          <!-- Demo Credentials -->
-          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-1.5 text-right font-medium">
-            <div class="flex items-center justify-end gap-1 text-slate-700 font-bold text-[11px] mb-1">
-              <span>💡 بيانات تجريبية سريعة للتجربة:</span>
-            </div>
-            <div class="flex items-center justify-between text-slate-600">
-              <span class="font-mono font-bold text-slate-800">admin@barqa.local</span>
-              <span class="text-slate-400">مدير النظام:</span>
-            </div>
-            <div class="flex items-center justify-between text-slate-600">
-              <span class="font-mono font-bold text-slate-800">user@testtravel.local</span>
-              <span class="text-slate-400">وكيل السفر:</span>
-            </div>
-            <div class="flex items-center justify-between text-slate-600">
-              <span class="font-mono font-bold text-slate-800">password</span>
-              <span class="text-slate-400">كلمة المرور:</span>
-            </div>
-          </div>
-
           <!-- Error -->
           <div v-if="error" class="bg-red-50 border border-red-200 text-red-600 text-xs font-semibold px-4 py-3 rounded-2xl text-right">
             {{ error }}

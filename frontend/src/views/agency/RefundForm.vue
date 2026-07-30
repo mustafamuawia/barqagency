@@ -11,7 +11,7 @@
       </template>
     </PageHeader>
 
-    <LoadingState v-if="loading" />
+    <LoadingState v-if="loading" :rows="2" />
 
     <EmptyState v-else-if="eligibleOrders.length === 0">
       لا توجد حجوزات مؤكدة مؤهلة لطلب استرداد حالياً

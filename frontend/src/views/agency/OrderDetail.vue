@@ -11,7 +11,7 @@
       </template>
     </PageHeader>
 
-    <LoadingState v-if="loading" />
+    <LoadingState v-if="loading" :rows="2" />
 
     <template v-else-if="order">
       <div class="grid md:grid-cols-2 gap-6">

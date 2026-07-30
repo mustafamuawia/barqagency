@@ -226,9 +226,24 @@
 
           <!-- Search Results -->
           <div v-if="searched" class="px-5 md:px-7 pb-5 md:pb-7 space-y-3 pt-2 border-t border-slate-100">
-            <div v-if="searching" class="text-center py-6 text-xs text-slate-400 flex items-center justify-center gap-2">
-              <Loader2 class="w-4 h-4 animate-spin" />
-              جارٍ البحث عن أفضل العروض...
+            <div v-if="searching" class="space-y-2">
+              <div
+                v-for="i in 3"
+                :key="i"
+                class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 border border-slate-200/80 rounded-2xl p-4 animate-pulse"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-slate-200 rounded-xl shrink-0"></div>
+                  <div class="space-y-2">
+                    <div class="h-3.5 bg-slate-200 rounded-full" style="width: 7rem"></div>
+                    <div class="h-2.5 bg-slate-200/70 rounded-full" style="width: 9rem"></div>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div class="h-4 bg-slate-200 rounded-full ms-auto" style="width: 5rem"></div>
+                  <div class="h-2.5 bg-slate-200/70 rounded-full ms-auto" style="width: 6rem"></div>
+                </div>
+              </div>
             </div>
 
             <div v-else-if="searchError" class="p-3 rounded-xl text-xs font-semibold bg-red-100 text-red-700 text-center">
@@ -456,7 +471,7 @@ import BarqLogo from '@/components/BarqLogo.vue'
 import {
   PlaneTakeoff, ClipboardList, Wallet, RotateCcw, ShieldCheck,
   Workflow, Sparkles, MapPin, FileText, BadgeDollarSign, CheckCircle2,
-  Mail, Clock, Search, ArrowLeftRight, Loader2,
+  Mail, Clock, Search, ArrowLeftRight,
 } from 'lucide-vue-next'
 
 const destinations = [
