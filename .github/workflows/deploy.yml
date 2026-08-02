@@ -32,16 +32,19 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/barqagency
-            git pull origin main
-
-            # Backend setup
+            
+            # 1. Use specific SSH key for git pull
+            GIT_SSH_COMMAND="ssh -i /root/.ssh/id_ed25519 -o IdentitiesOnly=yes" git pull origin main
+            
+            # 2. Backend setup (with Composer superuser allowed)
             cd /var/www/barqagency/backend
+            export COMPOSER_ALLOW_SUPERUSER=1
             composer install --no-dev --optimize-autoloader
             php artisan migrate --force
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
 
-            # Permissions
+            # 3. Fix directory permissions
             chown -R www-data:www-data /var/www/barqagency
             chmod -R 775 /var/www/barqagency/backend/storage /var/www/barqagency/backend/bootstrap/cache
