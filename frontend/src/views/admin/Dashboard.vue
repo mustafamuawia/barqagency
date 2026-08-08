@@ -76,7 +76,7 @@
       <!-- Financial Summary -->
       <Card class="space-y-4">
         <h3 class="font-bold text-sm text-slate-900">الملخص المالي (هذا الشهر)</h3>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200">
             <p class="text-[10px] text-slate-500">إجمالي الحجوزات</p>
             <p class="text-xl font-black text-slate-900 font-mono mt-1">{{ formatCurrency(financials.totalBookings) }}</p>
@@ -95,7 +95,7 @@
       <!-- Quick Actions -->
       <Card>
         <h3 class="font-bold text-sm text-slate-900 mb-4">إجراءات سريعة</h3>
-        <div class="grid grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <router-link to="/admin/orders" class="bg-[#0f172a] hover:bg-slate-800 text-white p-4 rounded-2xl text-center text-xs font-bold transition flex flex-col items-center gap-2">
             <ClipboardList class="w-5 h-5 text-amber-400" />
             عرض الطلبات

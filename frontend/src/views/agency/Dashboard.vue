@@ -15,7 +15,7 @@
 
     <template v-else>
       <!-- Stats Grid -->
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatTile
           :icon="Wallet"
           icon-bg="bg-emerald-100"

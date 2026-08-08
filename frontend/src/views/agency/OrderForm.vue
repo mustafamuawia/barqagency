@@ -16,7 +16,7 @@
           <PlaneTakeoff class="w-4 h-4 text-amber-500" />
           تفاصيل الرحلة
         </h3>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5">تاريخ المغادرة</label>
             <input v-model="form.departure_date" type="date" required
@@ -40,7 +40,7 @@
           <MapPin class="w-4 h-4 text-blue-500" />
           خط السير
         </h3>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5">شركة الطيران</label>
             <input v-model="airlineQuery" type="text" list="airline-options" required
@@ -93,7 +93,7 @@
         </h3>
         <div v-for="(p, i) in passengers" :key="i" class="space-y-2">
           <p class="text-xs font-bold text-slate-500">الراكب {{ i + 1 }}</p>
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1.5">نوع الراكب</label>
               <select v-model="p.passenger_type_id" required

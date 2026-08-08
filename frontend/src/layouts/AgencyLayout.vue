@@ -129,27 +129,27 @@
     </aside>
 
     <!-- Top Header -->
-    <header class="bg-[#0f172a] text-white py-3 px-4 md:px-8 flex items-center justify-between border-b border-slate-800 shadow-md sticky top-0 z-30">
-      <div class="flex items-center gap-4">
+    <header class="bg-[#0f172a] text-white py-2.5 sm:py-3 px-3 sm:px-4 md:px-8 flex items-center justify-between gap-2 border-b border-slate-800 shadow-md sticky top-0 z-30">
+      <div class="flex items-center gap-2 sm:gap-4 min-w-0">
         <button
           @click="openSidebar"
-          class="p-2 hover:bg-slate-800 rounded-lg text-slate-300 transition focus:outline-none focus:ring-2 focus:ring-amber-500"
+          class="p-2 hover:bg-slate-800 rounded-lg text-slate-300 transition focus:outline-none focus:ring-2 focus:ring-amber-500 shrink-0"
         >
-          <Menu class="w-6 h-6" />
+          <Menu class="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
-        <div class="flex items-center gap-2">
-          <div class="bg-amber-500 text-slate-900 p-1.5 rounded-lg flex items-center justify-center">
-            <BarqLogo class="w-6 h-6" />
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="bg-amber-500 text-slate-900 p-1.5 rounded-lg flex items-center justify-center shrink-0">
+            <BarqLogo class="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <h1 class="text-2xl font-black tracking-wide text-amber-500">Barq Agency</h1>
-            <p class="text-[10px] text-slate-400 font-light -mt-1">B2B Travel & Tourism Portal</p>
+          <div class="min-w-0">
+            <h1 class="text-base sm:text-2xl font-black tracking-wide text-amber-500 leading-tight whitespace-nowrap truncate">Barq Agency</h1>
+            <p class="hidden sm:block text-[10px] text-slate-400 font-light -mt-1 whitespace-nowrap">B2B Travel & Tourism Portal</p>
           </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
-        <div class="bg-slate-800 text-slate-200 font-medium px-3 py-1.5 rounded-xl text-sm flex items-center gap-2 border border-slate-700">
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="hidden sm:flex bg-slate-800 text-slate-200 font-medium px-3 py-1.5 rounded-xl text-sm items-center gap-2 border border-slate-700 whitespace-nowrap">
           <Building2 class="w-4 h-4 text-amber-400" />
           بوابة الوكالة
         </div>
@@ -157,7 +157,7 @@
     </header>
 
     <!-- Page Content -->
-    <main class="flex-1">
+    <main class="flex-1 min-w-0">
       <router-view />
     </main>
 

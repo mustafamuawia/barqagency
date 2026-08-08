@@ -27,9 +27,9 @@
             <span class="text-[10px] text-slate-400">رقم الطلب</span>
             <span class="font-mono font-bold text-slate-200 text-sm">{{ refund.order?.order_number }}</span>
           </div>
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] text-slate-400">الوكالة</span>
-            <span class="text-sm font-bold text-white">{{ refund.agency?.name }}</span>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] text-slate-400 shrink-0">الوكالة</span>
+            <span class="text-sm font-bold text-white truncate text-left">{{ refund.agency?.name }}</span>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-[10px] text-slate-400">المبلغ الأصلي</span>

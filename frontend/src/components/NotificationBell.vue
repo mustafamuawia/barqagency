@@ -19,7 +19,7 @@
     <!-- Dropdown -->
     <div
       v-if="open"
-      class="absolute left-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 text-slate-800 overflow-hidden"
+      class="fixed sm:absolute left-3 right-3 sm:right-auto sm:left-0 mt-2 sm:w-80 w-auto bg-white rounded-2xl shadow-xl border border-slate-200 z-50 text-slate-800 overflow-hidden"
       dir="rtl"
     >
       <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">

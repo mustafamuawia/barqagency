@@ -60,7 +60,7 @@
               </Button>
             </div>
           </div>
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200">
               <p class="text-[10px] text-slate-500">إجمالي الحجوزات</p>
               <p class="text-xl font-black text-slate-900 font-mono mt-1">{{ formatCurrency(summary.totalBookings) }}</p>

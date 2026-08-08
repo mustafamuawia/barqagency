@@ -8,7 +8,7 @@
 
     <template v-else-if="wallet">
       <!-- Balance Cards -->
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatTile
           :icon="Wallet"
           icon-bg="bg-emerald-100"
@@ -42,10 +42,10 @@
         <Card class="space-y-3">
           <h3 class="font-bold text-sm text-slate-900 border-b pb-2">معلومات التحويل البنكي</h3>
           <div class="space-y-2 text-xs">
-            <div class="flex justify-between"><span class="text-slate-400">اسم البنك:</span> <span class="font-bold">البنك الأهلي التجاري (SNB)</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">اسم الحساب:</span> <span class="font-bold">شركة سكاي بلان المحدودة / برق LLC</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">رقم الحساب:</span> <span class="font-mono font-bold">966-2244-6688-22</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">رقم IBAN:</span> <span class="font-mono font-bold text-[11px]">SA9340000009662244668822</span></div>
+            <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">اسم البنك:</span> <span class="font-bold text-left">البنك الأهلي التجاري (SNB)</span></div>
+            <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">اسم الحساب:</span> <span class="font-bold text-left">شركة سكاي بلان المحدودة / برق LLC</span></div>
+            <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">رقم الحساب:</span> <span class="font-mono font-bold break-all text-left">966-2244-6688-22</span></div>
+            <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">رقم IBAN:</span> <span class="font-mono font-bold text-[11px] break-all text-left">SA9340000009662244668822</span></div>
           </div>
         </Card>
 

@@ -1,10 +1,10 @@
 <template>
-  <Card class="flex items-center justify-between">
-    <div>
+  <Card class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="min-w-0">
       <h2 class="text-lg font-extrabold text-slate-900">{{ title }}</h2>
       <p v-if="subtitle" class="text-xs text-slate-400 mt-0.5">{{ subtitle }}</p>
     </div>
-    <div v-if="$slots.actions" class="flex items-center gap-2">
+    <div v-if="$slots.actions" class="flex items-center gap-2 flex-wrap">
       <slot name="actions" />
     </div>
   </Card>

@@ -1,24 +1,24 @@
 <template>
   <div class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col justify-between antialiased" dir="rtl">
-    <div>
+    <div class="min-w-0">
       <!-- Top Header Navigation -->
-      <header class="bg-[#0f172a] text-white py-3 px-4 md:px-8 flex items-center justify-between shadow-md">
-        <div class="flex items-center gap-2">
-          <router-link to="/register" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-5 py-2 rounded-xl text-xs sm:text-sm transition shadow-sm">
+      <header class="bg-[#0f172a] text-white py-2.5 sm:py-3 px-3 sm:px-4 md:px-8 flex items-center justify-between gap-2 shadow-md">
+        <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <router-link to="/register" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 sm:px-5 py-2 rounded-xl text-[11px] sm:text-sm transition shadow-sm whitespace-nowrap">
             إنشاء حساب مجاناً
           </router-link>
-          <router-link to="/login" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-5 py-2 rounded-xl text-xs sm:text-sm border border-slate-700 transition">
+          <router-link to="/login" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 sm:px-5 py-2 rounded-xl text-[11px] sm:text-sm border border-slate-700 transition whitespace-nowrap">
             تسجيل الدخول
           </router-link>
         </div>
 
-        <div class="flex items-center gap-2">
-          <div class="text-right">
-            <h1 class="text-2xl font-black tracking-wide text-amber-500 leading-tight">برق</h1>
-            <p class="text-[9px] text-slate-400 font-light -mt-1">بوابة وكلاء B2B للسفر والسياحة</p>
+        <div class="flex items-center gap-2 shrink-0">
+          <div class="text-right min-w-0">
+            <h1 class="text-base sm:text-2xl font-black tracking-wide text-amber-500 leading-tight whitespace-nowrap truncate">برق</h1>
+            <p class="hidden sm:block text-[9px] text-slate-400 font-light -mt-1 whitespace-nowrap">بوابة وكلاء B2B للسفر والسياحة</p>
           </div>
-          <div class="bg-amber-500 text-slate-900 p-1.5 rounded-lg font-black text-xl flex items-center justify-center">
-            <BarqLogo class="w-6 h-6" />
+          <div class="bg-amber-500 text-slate-900 p-1.5 rounded-lg font-black text-xl flex items-center justify-center shrink-0">
+            <BarqLogo class="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
       </header>

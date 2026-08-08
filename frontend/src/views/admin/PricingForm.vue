@@ -23,9 +23,9 @@
             <span class="text-[10px] text-slate-400">رقم الطلب</span>
             <span class="font-mono font-bold text-amber-400 text-sm">{{ order.order_number }}</span>
           </div>
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] text-slate-400">الوكالة</span>
-            <span class="text-sm font-bold text-white">{{ order.agency?.name }}</span>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] text-slate-400 shrink-0">الوكالة</span>
+            <span class="text-sm font-bold text-white truncate text-left">{{ order.agency?.name }}</span>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-[10px] text-slate-400">الركاب</span>
