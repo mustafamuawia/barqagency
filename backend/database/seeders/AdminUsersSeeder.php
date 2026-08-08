@@ -15,8 +15,8 @@ class AdminUsersSeeder extends Seeder
         $superAdminType = UserType::where('name', 'super_admin')->first();
         $adminType = UserType::where('name', 'admin')->first();
         $b2bType = UserType::where('name', 'b2b')->first();
-
-        // Create Super Admin
+      
+        // Create Super Admin 
         $superAdmin = User::firstOrCreate(
             ['email' => 'super@barqa.local'],
             [
