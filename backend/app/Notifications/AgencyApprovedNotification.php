@@ -18,6 +18,7 @@ class AgencyApprovedNotification extends Notification
 
         return (new MailMessage)
             ->subject('تمت الموافقة على حساب وكالتك - Barq Agency')
+            ->greeting('تحية طيبة')
             ->line('يسعدنا إبلاغك بأنه تمت الموافقة على طلب تسجيل وكالتك في منصة Barq Agency.')
             ->action('تسجيل الدخول الآن', $url)
             ->line('يمكنك الآن الوصول الكامل للوحة تحكم الوكيل.');

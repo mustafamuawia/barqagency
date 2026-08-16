@@ -15,16 +15,7 @@
 
     <template v-else>
       <!-- Stats Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatTile
-          :icon="Wallet"
-          icon-bg="bg-emerald-100"
-          icon-color="text-emerald-600"
-          label="الرصيد الحالي"
-          :value="formatCurrency(wallet?.balance)"
-          value-color="text-emerald-600"
-          :caption="wallet?.status || 'نشطة'"
-        />
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <StatTile
           :icon="ClipboardList"
           icon-bg="bg-amber-100"
@@ -40,7 +31,7 @@
           icon-bg="bg-blue-100"
           icon-color="text-blue-600"
           label="حد الائتمان"
-          :value="formatCurrency(wallet?.credit_limit)"
+          :value="formatPoints(wallet?.credit_limit)"
           value-color="text-blue-600"
           caption="ائتمان متاح"
         />
@@ -106,6 +97,7 @@ import Badge from '@/components/Badge.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import DataTable from '@/components/DataTable.vue'
 import Button from '@/components/Button.vue'
+import { formatPoints } from '@/utils/points'
 
 const wallet = ref(null)
 const orders = ref([])
@@ -130,7 +122,6 @@ const loadData = async () => {
 
 onMounted(loadData)
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 const formatDate = (date) => new Date(date).toLocaleDateString('ar-EG')
 
 const statusColor = (status) => {

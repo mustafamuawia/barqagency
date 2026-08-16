@@ -29,6 +29,31 @@ class ReferenceResolver
         );
     }
 
+    /**
+     * Resolves an airline the agency typed by hand. An unknown name is added as a local
+     * carrier with no IATA code — small operators often have none, and inventing one would
+     * collide with the real two-letter codes.
+     */
+    public function findOrCreateAirlineByName(string $name): Airline
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', $name));
+
+        // Matched case-insensitively so "al manar" does not become a second "Al Manar".
+        $existing = Airline::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return Airline::create([
+            'code' => null,
+            'name' => $name,
+            'is_local' => true,
+            'gds_enabled' => false,
+            'channel' => 'local',
+        ]);
+    }
+
     public function findOrCreateAirport(string $code): Airport
     {
         $code = strtoupper($code);

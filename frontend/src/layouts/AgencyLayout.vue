@@ -148,11 +148,24 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-3 shrink-0">
-        <div class="hidden sm:flex bg-slate-800 text-slate-200 font-medium px-3 py-1.5 rounded-xl text-sm items-center gap-2 border border-slate-700 whitespace-nowrap">
-          <Building2 class="w-4 h-4 text-amber-400" />
-          بوابة الوكالة
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div
+          v-if="auth.agencyStatus === 'active'"
+          class="flex bg-slate-800 text-slate-200 font-medium px-2.5 sm:px-3 py-1.5 rounded-xl text-sm items-center gap-2 border border-slate-700 whitespace-nowrap"
+        >
+          <Wallet class="w-4 h-4 text-amber-400 shrink-0" />
+          <span class="font-bold text-xs sm:text-sm" :class="balanceColor">
+            {{ balanceVisible ? formatPoints(wallet?.balance) : '••••••' }}
+          </span>
+          <button
+            @click="balanceVisible = !balanceVisible"
+            class="text-slate-400 hover:text-white transition"
+            :aria-label="balanceVisible ? 'إخفاء الرصيد' : 'إظهار الرصيد'"
+          >
+            <component :is="balanceVisible ? EyeOff : Eye" class="w-3.5 h-3.5" />
+          </button>
         </div>
+        <NotificationBell />
       </div>
     </header>
 
@@ -169,24 +182,55 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationsStore } from '@/stores/notifications'
+import NotificationBell from '@/components/NotificationBell.vue'
 import {
   Menu, X, Building2, LayoutDashboard, ClipboardList, PlusCircle,
-  Wallet, LogOut, RotateCcw, FileText, UserCog
+  Wallet, LogOut, RotateCcw, FileText, UserCog, Eye, EyeOff
 } from 'lucide-vue-next'
 import BarqLogo from '@/components/BarqLogo.vue'
+import { formatPoints } from '@/utils/points'
 
 const router = useRouter()
 const auth = useAuthStore()
+const notifications = useNotificationsStore()
 const sidebarOpen = ref(false)
+const wallet = ref(null)
+const balanceVisible = ref(false)
 
 const openSidebar = () => { sidebarOpen.value = true }
 const closeSidebar = () => { sidebarOpen.value = false }
 
+const BALANCE_COLORS = { healthy: 'text-emerald-400', negative: 'text-amber-400', warning: 'text-amber-400', critical: 'text-red-400' }
+const balanceColor = computed(() => BALANCE_COLORS[wallet.value?.status] || 'text-emerald-400')
+
+const loadWallet = async () => {
+  try {
+    const response = await api.get('/wallets')
+    wallet.value = response.data
+  } catch (err) {
+    console.error('Failed to load wallet', err)
+  }
+}
+
 const logout = async () => {
+  notifications.disconnectRealtime()
   await auth.logout()
   router.push('/login')
 }
+
+onMounted(() => {
+  if (auth.user?.id && auth.agencyStatus === 'active') {
+    notifications.init(auth.user.id, auth.token, 'agency')
+    loadWallet()
+  }
+})
+
+onUnmounted(() => {
+  notifications.disconnectRealtime()
+})
 </script>

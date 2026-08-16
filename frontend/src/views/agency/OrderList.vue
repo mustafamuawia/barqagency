@@ -36,7 +36,7 @@
           <td class="p-3 text-slate-600">{{ order.total_passengers }}</td>
           <td class="p-3 text-slate-600">{{ formatDate(order.departure_date) }}</td>
           <td class="p-3 font-mono font-bold text-emerald-600">
-            {{ order.latest_quote ? formatCurrency(order.latest_quote.total_price) : '—' }}
+            {{ order.latest_quote ? formatMoney(order.latest_quote.total_price) : '—' }}
           </td>
           <td class="p-3">
             <Badge :color="statusColor(order.status?.name)">{{ order.status?.label }}</Badge>
@@ -60,6 +60,7 @@ import LoadingState from '@/components/LoadingState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import DataTable from '@/components/DataTable.vue'
 import Pagination from '@/components/Pagination.vue'
+import { formatMoney } from '@/utils/points'
 
 const orders = ref([])
 const meta = ref(null)
@@ -90,6 +91,5 @@ const statusColor = (status) => {
   return colors[status] || 'slate'
 }
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 const formatDate = (date) => new Date(date).toLocaleDateString('ar-EG')
 </script>

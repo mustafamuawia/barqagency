@@ -19,6 +19,7 @@ use App\Notifications\Admin\NewRefundRequestNotification;
 use App\Services\Audit\AuditLogger;
 use App\Services\Notification\AdminNotifier;
 use App\Services\Pdf\PdfRenderer;
+use App\Services\Settings\PointSettingService;
 use App\Traits\AuthorizesAgencyOwnership;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,7 @@ class RefundService
         private readonly AuditLogger $audit,
         private readonly PdfRenderer $pdfRenderer,
         private readonly AdminNotifier $adminNotifier,
+        private readonly PointSettingService $pointSetting,
     ) {
     }
 
@@ -150,13 +152,17 @@ class RefundService
             // another refund credit from racing against this balance read/write.
             $wallet = Wallet::where('agency_id', $refund->agency_id)->lockForUpdate()->firstOrFail();
             $balanceBefore = (float) $wallet->balance;
-            $newBalance = $wallet->balance + $refundAmount;
+            // refund_amount is money — the wallet ledger is in points, so it's converted here,
+            // same as wallet top-ups/deposits and order booking debits.
+            $pointsCredit = $this->pointSetting->moneyToPoints((float) $refundAmount);
+            $newBalance = $wallet->balance + $pointsCredit;
 
             $creditType = WalletTransactionType::firstOrCreate(['name' => 'refund_credit'], ['label' => 'Refund Credit']);
             $wallet->transactions()->create([
                 'uuid' => Str::uuid(),
                 'transaction_type_id' => $creditType->id,
-                'amount' => $refundAmount,
+                'amount' => $pointsCredit,
+                'money_equivalent' => (float) $refundAmount,
                 'balance_after' => $newBalance,
                 'reference_type' => Refund::class,
                 'reference_id' => $refund->id,

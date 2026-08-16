@@ -71,15 +71,15 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200">
               <p class="text-[10px] text-slate-500">إجمالي الحجوزات</p>
-              <p class="text-xl font-black text-slate-900 font-mono mt-1">{{ formatCurrency(summary.totalBookings) }}</p>
+              <p class="text-xl font-black text-slate-900 font-mono mt-1">{{ formatMoney(summary.totalBookings) }}</p>
             </div>
             <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200">
               <p class="text-[10px] text-slate-500">إجمالي الاستردادات</p>
-              <p class="text-xl font-black text-red-600 font-mono mt-1">{{ formatCurrency(summary.totalRefunds) }}</p>
+              <p class="text-xl font-black text-red-600 font-mono mt-1">{{ formatMoney(summary.totalRefunds) }}</p>
             </div>
             <div class="bg-[#0f172a] rounded-2xl p-4">
               <p class="text-[10px] text-slate-400">صافي الإيرادات</p>
-              <p class="text-xl font-black text-emerald-400 font-mono mt-1">{{ formatCurrency(summary.net) }}</p>
+              <p class="text-xl font-black text-emerald-400 font-mono mt-1">{{ formatMoney(summary.net) }}</p>
             </div>
           </div>
         </Card>
@@ -92,13 +92,13 @@
             لا توجد حجوزات في هذه الفترة
           </div>
 
-          <DataTable v-else :columns="['رقم الطلب', 'الوكالة', 'التاريخ', 'الحالة', 'القيمة']">
+          <DataTable v-else :columns="['رقم الطلب', 'الوكالة', 'التاريخ', 'الحالة', 'القيمة (ج.س)']">
             <tr v-for="order in bookingHistory" :key="order.order_number" class="hover:bg-slate-50 transition">
               <td class="p-3 font-mono font-bold text-slate-700">{{ order.order_number }}</td>
               <td class="p-3 text-slate-600">{{ order.agency_name }}</td>
               <td class="p-3 text-slate-500">{{ order.date }}</td>
               <td class="p-3 text-slate-600">{{ order.status_label }}</td>
-              <td class="p-3 font-mono text-slate-700">{{ formatCurrency(order.amount) }}</td>
+              <td class="p-3 font-mono text-slate-700">{{ formatMoney(order.amount) }}</td>
             </tr>
           </DataTable>
 
@@ -138,7 +138,8 @@
                 <th class="p-3 font-semibold">الوكالة</th>
                 <th class="p-3 font-semibold">التاريخ</th>
                 <th class="p-3 font-semibold">رقم التحويل</th>
-                <th class="p-3 font-semibold">المبلغ</th>
+                <th class="p-3 font-semibold">النقاط</th>
+                <th class="p-3 font-semibold">المبلغ (ج.س)</th>
                 <th class="p-3 font-semibold text-center">الحالة</th>
                 <th class="p-3 font-semibold">الإيصال</th>
               </tr>
@@ -148,7 +149,8 @@
                 <td class="p-3 font-bold text-slate-800">{{ dep.wallet?.agency?.name || '—' }}</td>
                 <td class="p-3 text-slate-500 font-mono">{{ formatFullDate(dep.created_at) }}</td>
                 <td class="p-3 font-mono font-bold text-slate-700">{{ dep.metadata?.reference_number || '—' }}</td>
-                <td class="p-3 font-mono font-black text-emerald-600">${{ parseFloat(dep.amount).toFixed(2) }}</td>
+                <td class="p-3 font-mono font-black text-emerald-600">{{ formatPoints(dep.amount) }}</td>
+                <td class="p-3 font-mono font-black text-slate-700">{{ formatMoney(dep.money_equivalent ?? dep.amount) }}</td>
                 <td class="p-3 text-center">
                   <span v-if="dep.metadata?.status === 'pending'"
                     class="bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full text-[10px]">
@@ -164,7 +166,7 @@
                   </span>
                 </td>
                 <td class="p-3">
-                  <a v-if="dep.metadata?.receipt_path" :href="`/storage/${dep.metadata.receipt_path}`" target="_blank"
+                  <a v-if="dep.receipt_url" :href="dep.receipt_url" target="_blank"
                     class="text-amber-600 text-xs font-bold hover:underline">
                     عرض الإيصال
                   </a>
@@ -193,6 +195,7 @@ import Button from '@/components/Button.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import Pagination from '@/components/Pagination.vue'
 import DataTable from '@/components/DataTable.vue'
+import { formatPoints, formatMoney } from '@/utils/points'
 
 const activeTab = ref('summary')
 const tabs = [
@@ -317,6 +320,5 @@ onMounted(async () => {
   await Promise.all([loadSummary(), loadBookingHistory(), loadAllDeposits()])
 })
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 const formatFullDate = (date) => new Date(date).toLocaleString('ar-SA')
 </script>

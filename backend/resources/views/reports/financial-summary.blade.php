@@ -32,15 +32,15 @@
         <div class="row">
             <div class="col">
                 <div class="label">إجمالي الحجوزات</div>
-                <div class="value">{{ number_format($totalBookings, 3) }}</div>
+                <div class="value">{{ number_format($totalBookings, 3) }} ج.س</div>
             </div>
             <div class="col">
                 <div class="label">إجمالي الاستردادات</div>
-                <div class="value red">{{ number_format($totalRefunds, 3) }}</div>
+                <div class="value red">{{ number_format($totalRefunds, 3) }} ج.س</div>
             </div>
             <div class="col">
                 <div class="label">صافي الإيرادات</div>
-                <div class="value emerald">{{ number_format($totalBookings - $totalRefunds, 3) }}</div>
+                <div class="value emerald">{{ number_format($totalBookings - $totalRefunds, 3) }} ج.س</div>
             </div>
         </div>
     </div>
@@ -56,7 +56,7 @@
                     @endif
                     <th>التاريخ</th>
                     <th>الحالة</th>
-                    <th>القيمة</th>
+                    <th>القيمة (ج.س)</th>
                 </tr>
             </thead>
             <tbody>
@@ -68,7 +68,7 @@
                         @endif
                         <td>{{ $order['date'] }}</td>
                         <td>{{ $order['status_label'] }}</td>
-                        <td>{{ number_format($order['amount'], 3) }}</td>
+                        <td>{{ number_format($order['amount'], 3) }} ج.س</td>
                     </tr>
                 @empty
                     <tr>

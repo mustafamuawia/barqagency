@@ -38,7 +38,7 @@
               {{ ownerEmailVerified(agency) ? 'مُفعّل' : 'غير مُفعّل' }}
             </Badge>
           </td>
-          <td class="p-3 font-mono font-bold text-emerald-600">{{ formatCurrency(agency.wallet?.balance) }}</td>
+          <td class="p-3 font-mono font-bold text-emerald-600">{{ formatPoints(agency.wallet?.balance) }}</td>
           <td class="p-3 font-mono text-slate-600">
             <div v-if="editingId === agency.id" class="flex items-center gap-1.5">
               <input
@@ -53,7 +53,7 @@
                 <X class="w-4 h-4" />
               </button>
             </div>
-            <span v-else>{{ formatCurrency(agency.wallet?.credit_limit) }}</span>
+            <span v-else>{{ formatPoints(agency.wallet?.credit_limit) }}</span>
           </td>
           <td class="p-3">
             <Badge :color="statusColor(agency.status)">{{ statusLabel(agency.status) }}</Badge>
@@ -127,6 +127,7 @@ import LoadingState from '@/components/LoadingState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import DataTable from '@/components/DataTable.vue'
 import Button from '@/components/Button.vue'
+import { formatPoints } from '@/utils/points'
 
 const tabs = [
   { value: null, label: 'الكل' },
@@ -253,5 +254,4 @@ const statusLabel = (status) => {
   return labels[status] || status
 }
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 </script>

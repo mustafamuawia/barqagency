@@ -61,16 +61,11 @@ class WalletController extends Controller
 
     public function submitDeposit(\App\Http\Requests\Api\V1\Wallet\SubmitDepositRequest $request)
     {
-        $receiptPath = null;
-        if ($request->hasFile('receipt')) {
-            $receiptPath = $request->file('receipt')->store('receipts', 'public');
-        }
-
         $transaction = $this->walletService->submitDeposit(
             $request->user(),
             (float) $request->validated('amount'),
             $request->validated('reference_number'),
-            $receiptPath
+            $request->file('receipt')
         );
 
         return response()->json([

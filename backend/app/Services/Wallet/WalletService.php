@@ -4,6 +4,7 @@ namespace App\Services\Wallet;
 
 use App\DTOs\Wallet\TopUpData;
 use App\Exceptions\MissingAgencyException;
+use App\Helpers\ReferenceNumberGenerator;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
@@ -13,8 +14,10 @@ use App\Notifications\Admin\NewWalletDepositNotification;
 use App\Services\Audit\AuditLogger;
 use App\Services\Notification\AdminNotifier;
 use App\Services\Pdf\PdfRenderer;
+use App\Services\Settings\PointSettingService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
@@ -25,6 +28,7 @@ class WalletService
         private readonly AuditLogger $audit,
         private readonly PdfRenderer $pdfRenderer,
         private readonly AdminNotifier $adminNotifier,
+        private readonly PointSettingService $pointSetting,
     ) {
     }
 
@@ -77,12 +81,14 @@ class WalletService
 
             $type = WalletTransactionType::firstOrCreate(['name' => 'topup'], ['label' => 'Top-Up']);
             $balanceBefore = (float) $wallet->balance;
-            $newBalance = $wallet->balance + $data->amount;
+            $points = $this->pointSetting->moneyToPoints((float) $data->amount);
+            $newBalance = $wallet->balance + $points;
 
             $wallet->transactions()->create([
                 'uuid' => Str::uuid(),
                 'transaction_type_id' => $type->id,
-                'amount' => $data->amount,
+                'amount' => $points,
+                'money_equivalent' => (float) $data->amount,
                 'balance_after' => $newBalance,
                 'description' => $data->description ?? 'Wallet top-up',
                 'created_by' => auth()->id(),
@@ -92,7 +98,7 @@ class WalletService
             $wallet->update(['balance' => $newBalance]);
 
             $this->audit->log('wallet.topup', $wallet, ['balance' => $balanceBefore], [
-                'amount' => (float) $data->amount,
+                'points_credited' => $points,
                 'balance' => (float) $newBalance,
             ]);
         });
@@ -111,21 +117,41 @@ class WalletService
         return $wallet;
     }
 
-    public function submitDeposit(User $user, float $amount, string $referenceNumber, ?string $receiptPath = null): WalletTransaction
+    public function submitDeposit(User $user, float $amount, string $referenceNumber, ?UploadedFile $receipt = null): WalletTransaction
     {
         $wallet = $this->myWallet($user);
 
-        return DB::transaction(function () use ($wallet, $amount, $referenceNumber, $receiptPath, $user) {
+        // Generated up front (not from the transaction's auto-increment id, which doesn't exist yet)
+        // so the receipt can be stored under its own folder alongside the agency's, per deposit.
+        $depositNumber = ReferenceNumberGenerator::make('DEP');
+
+        $receiptPath = null;
+        if ($receipt) {
+            $extension = $receipt->extension() ?: $receipt->getClientOriginalExtension() ?: 'bin';
+            // storeAs creates the "uploads/{agency}/{deposit}" directories automatically if missing.
+            $receiptPath = $receipt->storeAs(
+                "uploads/{$wallet->agency_id}/{$depositNumber}",
+                "receipt.{$extension}",
+                'public'
+            );
+        }
+
+        return DB::transaction(function () use ($wallet, $amount, $referenceNumber, $receiptPath, $depositNumber, $user) {
             $type = WalletTransactionType::firstOrCreate(['name' => 'deposit_pending'], ['label' => 'إيداع قيد المراجعة']);
+            // Preview only — the actual points credited are recomputed at approval time (see approveDeposit),
+            // since the rate may change between submission and approval.
+            $previewPoints = $this->pointSetting->moneyToPoints($amount);
 
             $tx = $wallet->transactions()->create([
                 'uuid' => Str::uuid(),
                 'transaction_type_id' => $type->id,
-                'amount' => $amount,
+                'amount' => $previewPoints,
+                'money_equivalent' => $amount,
                 'balance_after' => $wallet->balance, // balance unchanged until approved
                 'description' => "مرجع التحويل: {$referenceNumber}",
                 'metadata' => [
                     'reference_number' => $referenceNumber,
+                    'deposit_number' => $depositNumber,
                     'receipt_path' => $receiptPath,
                     'status' => 'pending',
                 ],
@@ -222,7 +248,8 @@ class WalletService
                 'agency_name' => $dep->wallet?->agency?->name,
                 'date' => $dep->created_at->toDateTimeString(),
                 'reference_number' => $dep->metadata['reference_number'] ?? '—',
-                'amount' => (float) $dep->amount,
+                'points' => (float) $dep->amount,
+                'money' => (float) ($dep->money_equivalent ?? $dep->amount),
                 'status_label' => match ($dep->metadata['status'] ?? null) {
                     'approved' => 'مقبول',
                     'rejected' => 'مرفوض',
@@ -269,9 +296,9 @@ class WalletService
     private function depositsCsvResponse(array $data)
     {
         $csv = fopen('php://temp', 'w+');
-        fputcsv($csv, ['Agency', 'Date', 'Reference Number', 'Amount', 'Status']);
+        fputcsv($csv, ['Agency', 'Date', 'Reference Number', 'Points', 'Amount (SDG)', 'Status']);
         foreach ($data['deposits'] as $dep) {
-            fputcsv($csv, [$dep['agency_name'], $dep['date'], $dep['reference_number'], $dep['amount'], $dep['status_label']]);
+            fputcsv($csv, [$dep['agency_name'], $dep['date'], $dep['reference_number'], $dep['points'], $dep['money'], $dep['status_label']]);
         }
         rewind($csv);
         $content = stream_get_contents($csv);
@@ -295,7 +322,11 @@ class WalletService
             $wallet = Wallet::where('id', $pendingTx->wallet_id)->lockForUpdate()->firstOrFail();
 
             $topUpType = WalletTransactionType::firstOrCreate(['name' => 'topup'], ['label' => 'Top-Up']);
-            $newBalance = $wallet->balance + $pendingTx->amount;
+            $moneyAmount = (float) ($pendingTx->money_equivalent ?? $pendingTx->amount);
+            // Converted at approval time (not submission time) since that's when points actually land
+            // and the rate may have changed since the agency submitted the notice.
+            $points = $this->pointSetting->moneyToPoints($moneyAmount);
+            $newBalance = $wallet->balance + $points;
             $refNum = $pendingTx->metadata['reference_number'] ?? $pendingTx->id;
 
             // Mark the pending notice as approved via raw DB to bypass immutability guard
@@ -310,7 +341,8 @@ class WalletService
             $wallet->transactions()->create([
                 'uuid' => Str::uuid(),
                 'transaction_type_id' => $topUpType->id,
-                'amount' => $pendingTx->amount,
+                'amount' => $points,
+                'money_equivalent' => $moneyAmount,
                 'balance_after' => $newBalance,
                 'description' => "موافقة الإيداع (مرجع: {$refNum})",
                 'created_by' => auth()->id(),
@@ -320,7 +352,7 @@ class WalletService
             $wallet->update(['balance' => $newBalance]);
 
             $this->audit->log('wallet.deposit_approved', $wallet, [], [
-                'amount' => (float) $pendingTx->amount,
+                'points_credited' => $points,
                 'new_balance' => $newBalance,
                 'ref' => $refNum,
             ]);

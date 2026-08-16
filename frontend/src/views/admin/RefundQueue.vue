@@ -21,7 +21,7 @@
           <td class="p-3 font-mono font-bold text-slate-700">{{ refund.refund_number }}</td>
           <td class="p-3 font-bold text-slate-800">{{ refund.agency?.name }}</td>
           <td class="p-3 font-mono text-slate-600">{{ refund.order?.order_number }}</td>
-          <td class="p-3 font-mono font-bold text-slate-700">{{ formatCurrency(refund.original_amount) }}</td>
+          <td class="p-3 font-mono font-bold text-slate-700">{{ formatMoney(refund.original_amount) }}</td>
           <td class="p-3 text-slate-500">{{ formatDate(refund.requested_at) }}</td>
           <td class="p-3">
             <Badge :color="statusColor(refund.status?.name)">{{ statusLabel(refund.status?.name) }}</Badge>
@@ -56,6 +56,7 @@ import LoadingState from '@/components/LoadingState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import DataTable from '@/components/DataTable.vue'
 import Pagination from '@/components/Pagination.vue'
+import { formatMoney } from '@/utils/points'
 
 const refunds = ref([])
 const meta = ref(null)
@@ -96,6 +97,5 @@ const statusLabel = (status) => {
   return labels[status] || status
 }
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 const formatDate = (date) => new Date(date).toLocaleDateString('ar-EG')
 </script>

@@ -108,6 +108,17 @@
           </router-link>
 
           <router-link
+            v-if="auth.isSuperAdmin"
+            to="/admin/settings"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
+            :class="$route.path.startsWith('/admin/settings') ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+            @click="closeSidebar"
+          >
+            <Settings class="w-4 h-4 text-amber-400" />
+            <span>إعدادات النقاط</span>
+          </router-link>
+
+          <router-link
             to="/admin/reports"
             class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
             :class="$route.path.startsWith('/admin/reports') ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
@@ -186,10 +197,6 @@
           <Shield class="w-4 h-4 text-emerald-400" />
           لوحة الإدارة النشطة
         </div>
-        <div class="hidden md:flex bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-xl text-xs flex-col items-end whitespace-nowrap">
-          <span class="text-[10px] text-emerald-500/80 font-normal">إجمالي خزانة المنصة</span>
-          <span class="font-bold font-mono">$45,200.00</span>
-        </div>
         <NotificationBell />
       </div>
     </header>
@@ -234,7 +241,7 @@ const logout = async () => {
 
 onMounted(() => {
   if (auth.user?.id) {
-    notifications.init(auth.user.id, auth.token)
+    notifications.init(auth.user.id, auth.token, 'admin')
   }
 })
 

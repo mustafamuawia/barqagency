@@ -16,12 +16,17 @@ use App\Models\OrderStatusHistory;
 use App\Models\QuoteStatus;
 use App\Models\User;
 use App\Models\WalletTransactionType;
+use App\Notifications\Admin\CreditLimitReachedNotification as AdminCreditLimitReachedNotification;
 use App\Notifications\Admin\NewOrderRequestNotification;
 use App\Notifications\Admin\OrderApprovedNotification;
+use App\Notifications\CreditLimitReachedNotification;
+use App\Notifications\QuoteUpdatedNotification;
 use App\Traits\AuthorizesAgencyOwnership;
 use App\Services\Audit\AuditLogger;
 use App\Services\FlightSearch\ReferenceResolver;
 use App\Services\Notification\AdminNotifier;
+use App\Services\Notification\AgencyNotifier;
+use App\Services\Settings\PointSettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -30,19 +35,26 @@ class OrderService
 {
     use AuthorizesAgencyOwnership;
 
+    /** The admin may still change the offer until the agency has acted on it. */
+    private const QUOTE_EDITABLE_STATUSES = ['pending_pricing', 'pricing_sent'];
+
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly AdminNotifier $adminNotifier,
+        private readonly AgencyNotifier $agencyNotifier,
         private readonly ReferenceResolver $referenceResolver,
+        private readonly PointSettingService $pointSetting,
     ) {}
 
-    public function listForUser(User $user): LengthAwarePaginator
+    public function listForUser(User $user, ?int $agencyId = null): LengthAwarePaginator
     {
         $query = Order::with(['agency', 'status', 'segments', 'passengers', 'latestQuote'])
             ->orderByDesc('created_at');
 
         if ($user->isAgency()) {
             $query->where('agency_id', $this->agencyIdFor($user));
+        } elseif ($agencyId) {
+            $query->where('agency_id', $agencyId);
         }
 
         return $query->paginate(20);
@@ -53,16 +65,20 @@ class OrderService
         $this->assertOwnsResource($user, $order->agency_id);
 
         return $order->load([
-            'agency',
+            'agency.agencyType',
             'status',
             'segments.airline',
-            'segments.departureAirport',
-            'segments.arrivalAirport',
+            'segments.departureAirport.city',
+            'segments.departureAirport.country',
+            'segments.arrivalAirport.city',
+            'segments.arrivalAirport.country',
             'segments.cabinClass',
             'passengers.passengerType',
             'quotes.status',
+            'quotes.createdBy',
             'statusHistories.fromStatus',
             'statusHistories.toStatus',
+            'statusHistories.createdBy',
         ]);
     }
 
@@ -92,6 +108,9 @@ class OrderService
             ]);
 
             foreach ($data->segments as $segment) {
+                $segment['airline_id'] = $this->resolveAirlineId($segment);
+                unset($segment['airline_name']);
+
                 $order->segments()->create($segment);
             }
 
@@ -224,13 +243,21 @@ class OrderService
     /**
      * @return array{order: Order, quote: mixed}
      */
+    /**
+     * Prices an order, or revises a quote the agency has not acted on yet. Each save adds a
+     * new quote so the price history stays intact; a revision also tells the agency.
+     */
     public function submitQuote(Order $order, SubmitQuoteData $data): array
     {
-        if ($order->status->name !== 'pending_pricing') {
-            throw new InvalidOrderStatusException('الطلب ليس بانتظار التسعير');
+        if (!in_array($order->status->name, self::QUOTE_EDITABLE_STATUSES, true)) {
+            throw new InvalidOrderStatusException('لا يمكن تعديل العرض بعد موافقة الوكيل على الطلب');
         }
 
-        return DB::transaction(function () use ($order, $data) {
+        $isRevision = $order->status->name === 'pricing_sent';
+
+        return DB::transaction(function () use ($order, $data, $isRevision) {
+            $this->applyDepartureDetails($order, $data);
+
             $quoteStatus = QuoteStatus::where('name', 'sent')->firstOrFail();
             $order->quotes()->create([
                 'status_id' => $quoteStatus->id,
@@ -242,18 +269,81 @@ class OrderService
                 'created_by' => auth()->id(),
             ]);
 
-            $order->transitionTo('pricing_sent', 'تم إرسال عرض السعر من الإدارة');
+            // Already 'pricing_sent' on a revision — this leaves the status alone and just
+            // records why it changed hands again.
+            $order->transitionTo(
+                'pricing_sent',
+                $isRevision ? 'تم تعديل عرض السعر من الإدارة' : 'تم إرسال عرض السعر من الإدارة'
+            );
 
-            $this->audit->log('order.quote_submitted', $order, [], [
+            $this->audit->log($isRevision ? 'order.quote_updated' : 'order.quote_submitted', $order, [], [
                 'total_price' => $data->totalPrice,
                 'order_number' => $order->order_number,
             ]);
+
+            if ($isRevision) {
+                $order->loadMissing('agency');
+                $this->agencyNotifier->send($order->agency, new QuoteUpdatedNotification($order));
+            }
 
             return [
                 'order' => $order->fresh(['status']),
                 'quote' => $order->latestQuote,
             ];
         });
+    }
+
+    /**
+     * A segment carries either a known airline id or a name the agency typed, which is
+     * registered as a new carrier when it does not match anything yet.
+     */
+    private function resolveAirlineId(array $segment): int
+    {
+        if (filled($segment['airline_id'] ?? null)) {
+            return (int) $segment['airline_id'];
+        }
+
+        return $this->referenceResolver->findOrCreateAirlineByName($segment['airline_name'])->id;
+    }
+
+    /**
+     * Records the departure time and hall the admin confirmed for each flight, plus the
+     * return date and time on a round trip. Fields left blank are not overwritten.
+     */
+    private function applyDepartureDetails(Order $order, SubmitQuoteData $data): void
+    {
+        if ($data->flights !== []) {
+            $segments = $order->segments()->get()->keyBy('id');
+
+            foreach ($data->flights as $flight) {
+                $segment = $segments->get($flight['id']);
+                if (!$segment) {
+                    continue;
+                }
+
+                $updates = [];
+
+                // Only ever set a departure time, never blank an existing one.
+                if (filled($flight['departure_datetime'] ?? null)) {
+                    $updates['departure_datetime'] = $flight['departure_datetime'];
+                }
+
+                // The hall is optional, so an empty value is a deliberate clear.
+                if (array_key_exists('departure_terminal', $flight)) {
+                    $updates['departure_terminal'] = $flight['departure_terminal'] ?: null;
+                }
+
+                if ($updates !== []) {
+                    $segment->update($updates);
+                }
+            }
+        }
+
+        if (filled($data->returnDate)) {
+            $order->update(['return_date' => $data->returnDate]);
+        }
+
+        $order->load('segments');
     }
 
     public function approve(User $user, Order $order): Order
@@ -269,49 +359,66 @@ class OrderService
             throw new MissingQuoteException();
         }
 
-        return DB::transaction(function () use ($order, $quote, $user) {
-            // Lock the wallet row to prevent concurrent debits racing past the credit limit
-            $wallet = \App\Models\Wallet::where('agency_id', $order->agency_id)
-                ->lockForUpdate()
-                ->firstOrFail();
+        try {
+            return DB::transaction(function () use ($order, $quote, $user) {
+                // Lock the wallet row to prevent concurrent debits racing past the credit limit
+                $wallet = \App\Models\Wallet::where('agency_id', $order->agency_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-            $newBalance = $wallet->balance - $quote->total_price;
-            if ($newBalance < -$wallet->credit_limit) {
-                throw new InsufficientWalletBalanceException();
+                // Order pricing (quote->total_price) is in money — the wallet ledger is in points, so
+                // the debit is converted at approval time, same as wallet top-ups/deposits.
+                $moneyDebit = (float) $quote->total_price;
+                $pointsDebit = $this->pointSetting->moneyToPoints($moneyDebit);
+                $newBalance = $wallet->balance - $pointsDebit;
+                if ($newBalance < -$wallet->credit_limit) {
+                    throw new InsufficientWalletBalanceException();
+                }
+
+                $order->transitionTo('approved', 'تمت الموافقة على العرض من قبل الوكالة');
+
+                $acceptedStatus = QuoteStatus::where('name', 'accepted')->firstOrFail();
+                $quote->update(['status_id' => $acceptedStatus->id]);
+
+                $debitType = WalletTransactionType::firstOrCreate(['name' => 'booking_debit'], ['label' => 'Booking Debit']);
+                $wallet->transactions()->create([
+                    'uuid' => Str::uuid(),
+                    'transaction_type_id' => $debitType->id,
+                    'amount' => -$pointsDebit,
+                    'money_equivalent' => -$moneyDebit,
+                    'balance_after' => $newBalance,
+                    'reference_type' => Order::class,
+                    'reference_id' => $order->id,
+                    'description' => "Booking debit for order {$order->order_number}",
+                    'created_by' => auth()->id(),
+                    'created_at' => now(),
+                ]);
+                $wallet->update(['balance' => $newBalance]);
+
+                $this->audit->log('order.approved', $order, [
+                    'status' => 'pricing_sent',
+                    'balance_before' => (float) $wallet->getOriginal('balance'),
+                ], [
+                    'status' => 'approved',
+                    'amount_debited' => (float) $quote->total_price,
+                    'balance_after' => $newBalance,
+                ]);
+
+                $order = $order->fresh(['status', 'agency']);
+                $this->adminNotifier->send(new OrderApprovedNotification($order));
+
+                return $order;
+            });
+        } catch (InsufficientWalletBalanceException $e) {
+            // Notified outside the transaction — it was rolled back, so any database
+            // notification created inside it would be rolled back too.
+            $order->loadMissing('agency');
+            $this->adminNotifier->send(new AdminCreditLimitReachedNotification($order));
+            if ($order->agency) {
+                $this->agencyNotifier->send($order->agency, new CreditLimitReachedNotification($order));
             }
 
-            $order->transitionTo('approved', 'تمت الموافقة على العرض من قبل الوكالة');
-
-            $acceptedStatus = QuoteStatus::where('name', 'accepted')->firstOrFail();
-            $quote->update(['status_id' => $acceptedStatus->id]);
-
-            $debitType = WalletTransactionType::firstOrCreate(['name' => 'booking_debit'], ['label' => 'Booking Debit']);
-            $wallet->transactions()->create([
-                'uuid' => Str::uuid(),
-                'transaction_type_id' => $debitType->id,
-                'amount' => -$quote->total_price,
-                'balance_after' => $newBalance,
-                'reference_type' => Order::class,
-                'reference_id' => $order->id,
-                'description' => "Booking debit for order {$order->order_number}",
-                'created_by' => auth()->id(),
-                'created_at' => now(),
-            ]);
-            $wallet->update(['balance' => $newBalance]);
-
-            $this->audit->log('order.approved', $order, [
-                'status' => 'pricing_sent',
-                'balance_before' => (float) $wallet->getOriginal('balance'),
-            ], [
-                'status' => 'approved',
-                'amount_debited' => (float) $quote->total_price,
-                'balance_after' => $newBalance,
-            ]);
-
-            $order = $order->fresh(['status', 'agency']);
-            $this->adminNotifier->send(new OrderApprovedNotification($order));
-
-            return $order;
-        });
+            throw $e;
+        }
     }
 }

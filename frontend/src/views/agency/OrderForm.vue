@@ -74,25 +74,23 @@
             </datalist>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5">وقت المغادرة</label>
-            <input v-model="segment.departure_datetime" type="datetime-local" required
-              class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5">وقت الوصول</label>
-            <input v-model="segment.arrival_datetime" type="datetime-local" required
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">وقت المغادرة (اختياري)</label>
+            <input v-model="segment.departure_datetime" type="datetime-local"
               class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
         </div>
       </Card>
 
-      <Card class="space-y-4">
+      <Card class="space-y-5">
         <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
           <User class="w-4 h-4 text-emerald-500" />
           بيانات الركاب
         </h3>
-        <div v-for="(p, i) in passengers" :key="i" class="space-y-2">
-          <p class="text-xs font-bold text-slate-500">الراكب {{ i + 1 }}</p>
+        <div v-for="(p, i) in passengers" :key="i" class="border border-slate-200 rounded-2xl p-4 space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold flex items-center justify-center">{{ i + 1 }}</span>
+            <p class="text-xs font-bold text-slate-700">الراكب {{ i + 1 }}</p>
+          </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1.5">نوع الراكب</label>
@@ -102,13 +100,45 @@
               </select>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">الاسم الأول</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">اللقب</label>
+              <select v-model="p.title" required
+                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400">
+                <option value="">اختر اللقب</option>
+                <option v-for="t in titleOptions" :key="t" :value="t">{{ t }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">تاريخ الميلاد</label>
+              <input v-model="p.date_of_birth" type="date" required
+                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">الاسم الأول (كما في الجواز)</label>
               <input v-model="p.first_name" type="text" required
                 class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">اسم العائلة</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">اسم العائلة (كما في الجواز)</label>
               <input v-model="p.last_name" type="text" required
+                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">الجنسية</label>
+              <input v-model="p.nationality" type="text" :list="`nationality-options-${i}`" required
+                placeholder="ابحث عن الجنسية"
+                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              <datalist :id="`nationality-options-${i}`">
+                <option v-for="country in countries" :key="country.id" :value="country.name" />
+              </datalist>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">رقم جواز السفر</label>
+              <input v-model="p.passport_number" type="text" required
+                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">تاريخ انتهاء الجواز</label>
+              <input v-model="p.passport_expiry" type="date" required
                 class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
             </div>
           </div>
@@ -142,16 +172,19 @@ const airlines = ref([])
 const cabins = ref([])
 const airports = ref([])
 const passengerTypes = ref([])
+const countries = ref([])
+const titleOptions = ['السيد', 'السيدة', 'الآنسة']
 
 onMounted(async () => {
   try {
-    const [airlinesRes, cabinsRes, airportsRes, typesRes] = await Promise.all([
-      api.get('/airlines'), api.get('/cabin-classes'), api.get('/airports'), api.get('/passenger-types'),
+    const [airlinesRes, cabinsRes, airportsRes, typesRes, countriesRes] = await Promise.all([
+      api.get('/airlines'), api.get('/cabin-classes'), api.get('/airports'), api.get('/passenger-types'), api.get('/countries'),
     ])
     airlines.value = airlinesRes.data
     cabins.value = cabinsRes.data
     airports.value = airportsRes.data
     passengerTypes.value = typesRes.data
+    countries.value = countriesRes.data
     if (passengerTypes.value.length) {
       passengers.value.forEach((p) => { p.passenger_type_id = p.passenger_type_id || passengerTypes.value[0].id })
     }
@@ -162,9 +195,19 @@ onMounted(async () => {
 
 const todayStr = () => new Date().toISOString().slice(0, 10)
 const form = ref({ departure_date: todayStr(), return_date: '', total_passengers: 1 })
-const segment = ref({ airline_id: '', departure_airport_id: '', arrival_airport_id: '', cabin_class_id: '', departure_datetime: '', arrival_datetime: '', sequence: 1 })
+const segment = ref({ airline_id: '', departure_airport_id: '', arrival_airport_id: '', cabin_class_id: '', departure_datetime: '', sequence: 1 })
 
-const makePassenger = (sequence) => ({ passenger_type_id: passengerTypes.value[0]?.id || '', first_name: '', last_name: '', sequence })
+const makePassenger = (sequence) => ({
+  passenger_type_id: passengerTypes.value[0]?.id || '',
+  title: '',
+  first_name: '',
+  last_name: '',
+  date_of_birth: '',
+  nationality: '',
+  passport_number: '',
+  passport_expiry: '',
+  sequence,
+})
 const passengers = ref([makePassenger(1)])
 
 watch(() => form.value.total_passengers, (count) => {
@@ -186,12 +229,13 @@ const findAirportByLabel = (label) => airports.value.find((a) => normalize(airpo
 const handleSubmit = async () => {
   error.value = ''
 
-  const airline = findAirlineByName(airlineQuery.value)
+  const airlineName = airlineQuery.value.trim().replace(/\s+/g, ' ')
+  const airline = findAirlineByName(airlineName)
   const departureAirport = findAirportByLabel(departureAirportQuery.value)
   const arrivalAirport = findAirportByLabel(arrivalAirportQuery.value)
 
-  if (!airline) {
-    error.value = 'يرجى اختيار شركة طيران من القائمة المقترحة'
+  if (!airlineName) {
+    error.value = 'يرجى إدخال اسم شركة الطيران'
     return
   }
   if (!departureAirport || !arrivalAirport) {
@@ -203,9 +247,12 @@ const handleSubmit = async () => {
     return
   }
 
-  segment.value.airline_id = airline.id
+  // An unlisted name is sent as-is; the API registers it as a new carrier.
+  segment.value.airline_id = airline?.id ?? null
+  segment.value.airline_name = airlineName
   segment.value.departure_airport_id = departureAirport.id
   segment.value.arrival_airport_id = arrivalAirport.id
+  segment.value.departure_datetime = segment.value.departure_datetime || null
 
   loading.value = true
   try {

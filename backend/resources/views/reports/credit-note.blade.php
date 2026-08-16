@@ -35,15 +35,15 @@
         <div class="row">
             <div class="col">
                 <div class="label">المبلغ الأصلي</div>
-                <div class="value">{{ number_format($refund->original_amount, 3) }} {{ $refund->currency_code }}</div>
+                <div class="value">{{ number_format($refund->original_amount, 3) }} ج.س</div>
             </div>
             <div class="col">
                 <div class="label">مبلغ الجزاء</div>
-                <div class="value red">{{ number_format($refund->penalty_amount, 3) }} {{ $refund->currency_code }}</div>
+                <div class="value red">{{ number_format($refund->penalty_amount, 3) }} ج.س</div>
             </div>
             <div class="col">
                 <div class="label">صافي المبلغ المسترد</div>
-                <div class="value emerald">{{ number_format($refund->refund_amount, 3) }} {{ $refund->currency_code }}</div>
+                <div class="value emerald">{{ number_format($refund->refund_amount, 3) }} ج.س</div>
             </div>
         </div>
     </div>

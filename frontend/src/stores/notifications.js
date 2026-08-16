@@ -8,11 +8,13 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const unreadCount = ref(0)
   const loading = ref(false)
   const connected = ref(false)
+  const basePath = ref('/admin/notifications')
+  const eventName = ref('admin.notification')
 
   const loadNotifications = async (page = 1) => {
     loading.value = true
     try {
-      const response = await api.get('/admin/notifications', { params: { page } })
+      const response = await api.get(basePath.value, { params: { page } })
       items.value = response.data.data
     } catch (err) {
       console.error('Failed to load notifications', err)
@@ -23,7 +25,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   const loadUnreadCount = async () => {
     try {
-      const response = await api.get('/admin/notifications/unread-count')
+      const response = await api.get(`${basePath.value}/unread-count`)
       unreadCount.value = response.data.unread_count
     } catch (err) {
       console.error('Failed to load unread count', err)
@@ -33,7 +35,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const markRead = async (id) => {
     const item = items.value.find((n) => n.id === id)
     try {
-      await api.put(`/admin/notifications/${id}/read`)
+      await api.put(`${basePath.value}/${id}/read`)
       if (item && !item.read_at) {
         item.read_at = new Date().toISOString()
         unreadCount.value = Math.max(0, unreadCount.value - 1)
@@ -45,7 +47,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   const markAllRead = async () => {
     try {
-      await api.put('/admin/notifications/read-all')
+      await api.put(`${basePath.value}/read-all`)
       items.value.forEach((n) => {
         if (!n.read_at) n.read_at = new Date().toISOString()
       })
@@ -59,7 +61,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     if (connected.value || !userId || !token) return
 
     const echo = initEcho(token)
-    echo.private(`App.Models.User.${userId}`).listen('.admin.notification', () => {
+    echo.private(`App.Models.User.${userId}`).listen(`.${eventName.value}`, () => {
       unreadCount.value++
       loadNotifications()
     })
@@ -71,7 +73,10 @@ export const useNotificationsStore = defineStore('notifications', () => {
     connected.value = false
   }
 
-  const init = (userId, token) => {
+  /** @param {'admin'|'agency'} role */
+  const init = (userId, token, role = 'admin') => {
+    basePath.value = `/${role}/notifications`
+    eventName.value = `${role}.notification`
     loadNotifications()
     loadUnreadCount()
     connectRealtime(userId, token)

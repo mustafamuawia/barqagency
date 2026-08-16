@@ -67,7 +67,7 @@
           icon-bg="bg-emerald-100"
           icon-color="text-emerald-600"
           label="إجمالي الأرصدة"
-          :value="formatCurrency(stats.totalBalance)"
+          :value="formatPoints(stats.totalBalance)"
           caption="عبر جميع الوكالات"
           value-color="text-emerald-600"
         />
@@ -79,15 +79,15 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200">
             <p class="text-[10px] text-slate-500">إجمالي الحجوزات</p>
-            <p class="text-xl font-black text-slate-900 font-mono mt-1">{{ formatCurrency(financials.totalBookings) }}</p>
+            <p class="text-xl font-black text-slate-900 font-mono mt-1">{{ formatMoney(financials.totalBookings) }}</p>
           </div>
           <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200">
             <p class="text-[10px] text-slate-500">إجمالي الاستردادات</p>
-            <p class="text-xl font-black text-red-600 font-mono mt-1">{{ formatCurrency(financials.totalRefunds) }}</p>
+            <p class="text-xl font-black text-red-600 font-mono mt-1">{{ formatMoney(financials.totalRefunds) }}</p>
           </div>
           <div class="bg-[#0f172a] rounded-2xl p-4">
             <p class="text-[10px] text-slate-400">صافي الإيرادات</p>
-            <p class="text-xl font-black text-emerald-400 font-mono mt-1">{{ formatCurrency(financials.totalBookings - financials.totalRefunds) }}</p>
+            <p class="text-xl font-black text-emerald-400 font-mono mt-1">{{ formatMoney(financials.totalBookings - financials.totalRefunds) }}</p>
           </div>
         </div>
       </Card>
@@ -151,6 +151,7 @@ import Badge from '@/components/Badge.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import DataTable from '@/components/DataTable.vue'
 import Button from '@/components/Button.vue'
+import { formatPoints, formatMoney } from '@/utils/points'
 
 const loading = ref(true)
 const stats = ref({ pendingOrders: 0, pendingRefunds: 0, pendingAgencies: 0, pendingTopups: 0, totalBalance: 0 })
@@ -172,8 +173,6 @@ const loadData = async () => {
 }
 
 onMounted(loadData)
-
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 
 const statusColor = (status) => {
   const colors = {

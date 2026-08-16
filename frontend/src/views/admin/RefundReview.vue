@@ -33,7 +33,7 @@
           </div>
           <div class="flex items-center justify-between">
             <span class="text-[10px] text-slate-400">المبلغ الأصلي</span>
-            <span class="text-sm font-bold text-emerald-400 font-mono">{{ formatCurrency(refund.original_amount) }}</span>
+            <span class="text-sm font-bold text-emerald-400 font-mono">{{ formatMoney(refund.original_amount) }}</span>
           </div>
         </div>
 
@@ -59,14 +59,14 @@
         <h3 class="font-bold text-sm text-slate-900">اتخاذ القرار</h3>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1.5">مبلغ الجزاء / رسوم الإلغاء (USD)</label>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">مبلغ الجزاء / رسوم الإلغاء (ج.س)</label>
           <input v-model.number="penaltyAmount" type="number" step="0.01" min="0" :max="refund.original_amount"
             class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-400" />
         </div>
 
         <div class="bg-[#0f172a] rounded-2xl p-4 flex items-center justify-between">
           <span class="text-xs text-slate-400">صافي المبلغ المسترد</span>
-          <span class="text-2xl font-black text-emerald-400 font-mono">{{ formatCurrency(netRefund) }}</span>
+          <span class="text-2xl font-black text-emerald-400 font-mono">{{ formatMoney(netRefund) }}</span>
         </div>
 
         <div>
@@ -115,6 +115,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import Card from '@/components/Card.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import Button from '@/components/Button.vue'
+import { formatMoney } from '@/utils/points'
 
 const props = defineProps({ id: [String, Number] })
 const router = useRouter()
@@ -193,5 +194,4 @@ const downloadCreditNote = async () => {
   }
 }
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 </script>

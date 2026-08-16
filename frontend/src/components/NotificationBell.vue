@@ -65,7 +65,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Bell, Ticket, Wallet, RotateCcw, Users } from 'lucide-vue-next'
+import { Bell, Ticket, Wallet, RotateCcw, Users, AlertTriangle } from 'lucide-vue-next'
 import { useNotificationsStore } from '@/stores/notifications'
 
 const router = useRouter()
@@ -89,9 +89,9 @@ const handleClick = async (item) => {
   }
 }
 
-const ICONS = { order: Ticket, deposit: Wallet, refund: RotateCcw, agency: Users }
-const ICON_BG = { order: 'bg-amber-100', deposit: 'bg-emerald-100', refund: 'bg-red-100', agency: 'bg-blue-100' }
-const ICON_COLOR = { order: 'text-amber-600', deposit: 'text-emerald-600', refund: 'text-red-600', agency: 'text-blue-600' }
+const ICONS = { order: Ticket, deposit: Wallet, refund: RotateCcw, agency: Users, credit_limit: AlertTriangle }
+const ICON_BG = { order: 'bg-amber-100', deposit: 'bg-emerald-100', refund: 'bg-red-100', agency: 'bg-blue-100', credit_limit: 'bg-red-100' }
+const ICON_COLOR = { order: 'text-amber-600', deposit: 'text-emerald-600', refund: 'text-red-600', agency: 'text-blue-600', credit_limit: 'text-red-600' }
 
 const icon = (type) => ICONS[type] || Bell
 const iconBg = (type) => ICON_BG[type] || 'bg-slate-100'

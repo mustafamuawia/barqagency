@@ -61,14 +61,14 @@ class ReportService
         $data = $this->reportData($user, $filter);
 
         $csv = fopen('php://temp', 'w+');
-        fputcsv($csv, ['Order Number', 'Agency', 'Date', 'Status', 'Amount']);
+        fputcsv($csv, ['Order Number', 'Agency', 'Date', 'Status', 'Amount (SDG)']);
         foreach ($data['orders'] as $order) {
             fputcsv($csv, [$order['order_number'], $order['agency_name'], $order['date'], $order['status_label'], $order['amount']]);
         }
         fputcsv($csv, []);
-        fputcsv($csv, ['Total Bookings', $data['totalBookings']]);
-        fputcsv($csv, ['Total Refunds', $data['totalRefunds']]);
-        fputcsv($csv, ['Net', $data['net']]);
+        fputcsv($csv, ['Total Bookings (SDG)', $data['totalBookings']]);
+        fputcsv($csv, ['Total Refunds (SDG)', $data['totalRefunds']]);
+        fputcsv($csv, ['Net (SDG)', $data['net']]);
         rewind($csv);
         $content = stream_get_contents($csv);
         fclose($csv);

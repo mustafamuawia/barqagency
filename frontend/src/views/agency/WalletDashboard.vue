@@ -14,7 +14,7 @@
           icon-bg="bg-emerald-100"
           icon-color="text-emerald-600"
           label="الرصيد الحالي"
-          :value="formatCurrency(wallet.balance)"
+          :value="formatPoints(wallet.balance)"
           value-color="text-emerald-600"
           :caption="wallet.status || 'نشطة'"
         />
@@ -23,7 +23,7 @@
           icon-bg="bg-blue-100"
           icon-color="text-blue-600"
           label="حد الائتمان"
-          :value="formatCurrency(wallet.credit_limit)"
+          :value="formatPoints(wallet.credit_limit)"
           value-color="text-blue-600"
         />
         <StatTile
@@ -31,7 +31,7 @@
           icon-bg="bg-amber-100"
           icon-color="text-amber-600"
           label="الرصيد المتاح"
-          :value="formatCurrency(Number(wallet.balance) + Number(wallet.credit_limit))"
+          :value="formatPoints(Number(wallet.balance) + Number(wallet.credit_limit))"
           value-color="text-amber-600"
         />
       </div>
@@ -63,7 +63,7 @@
           <form @submit.prevent="submitDeposit" class="space-y-3">
             <div class="grid grid-cols-2 gap-2">
               <div class="space-y-1">
-                <label class="block text-[10px] font-bold text-slate-500">المبلغ ($ USD)</label>
+                <label class="block text-[10px] font-bold text-slate-500">المبلغ (ج.س)</label>
                 <input v-model="depositForm.amount" type="number" step="0.01" min="1" class="w-full bg-slate-50 border rounded-xl px-3 py-1.5 text-xs font-bold font-mono" required>
               </div>
               <div class="space-y-1">
@@ -71,6 +71,10 @@
                 <input v-model="depositForm.reference_number" type="text" placeholder="مثال: TXN987251" class="w-full bg-slate-50 border rounded-xl px-3 py-1.5 text-xs" required>
               </div>
             </div>
+
+            <p v-if="depositForm.amount && rate.money_amount" class="text-[11px] font-semibold text-emerald-600">
+              سيُضاف حوالي {{ formatPoints(moneyToPoints(depositForm.amount)) }} عند اعتماد الإيداع ({{ rate.money_amount }} ج.س = {{ rate.point_amount }} نقطة)
+            </p>
 
             <div class="space-y-1">
               <label class="block text-[10px] font-bold text-slate-500">إيصال التحويل (اختياري)</label>
@@ -101,7 +105,9 @@
               <tr>
                 <th class="p-3 font-semibold">التاريخ</th>
                 <th class="p-3 font-semibold">رقم التحويل</th>
-                <th class="p-3 font-semibold">المبلغ المطلوب</th>
+                <th class="p-3 font-semibold">النقاط (تقديري)</th>
+                <th class="p-3 font-semibold">المبلغ المطلوب (ج.س)</th>
+                <th class="p-3 font-semibold">الإيصال</th>
                 <th class="p-3 font-semibold text-center">الحالة</th>
               </tr>
             </thead>
@@ -109,7 +115,15 @@
               <tr v-for="dep in depositHistory" :key="dep.id" class="hover:bg-slate-50 transition">
                 <td class="p-3 text-slate-500 font-mono">{{ formatDate(dep.created_at) }}</td>
                 <td class="p-3 font-mono font-bold text-slate-700">{{ dep.metadata?.reference_number || '—' }}</td>
-                <td class="p-3 font-mono font-black text-emerald-600">${{ parseFloat(dep.amount).toFixed(2) }}</td>
+                <td class="p-3 font-mono font-black text-emerald-600">{{ formatPoints(dep.amount) }}</td>
+                <td class="p-3 font-mono font-black text-slate-700">{{ formatMoney(dep.money_equivalent ?? dep.amount) }}</td>
+                <td class="p-3">
+                  <a v-if="dep.receipt_url" :href="dep.receipt_url" target="_blank" class="text-amber-600 font-bold hover:underline inline-flex items-center gap-1">
+                    <FileText class="w-3.5 h-3.5" />
+                    عرض الإيصال
+                  </a>
+                  <span v-else class="text-slate-400">بدون مرفق</span>
+                </td>
                 <td class="p-3 text-center">
                   <span v-if="dep.metadata?.status === 'pending'"
                     class="bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full text-[10px]">
@@ -141,15 +155,18 @@
           لا توجد معاملات بعد
         </div>
 
-        <DataTable v-else :columns="['التاريخ', 'النوع', 'الوصف', 'المبلغ', 'الرصيد بعد']">
+        <DataTable v-else :columns="['التاريخ', 'النوع', 'الوصف', 'النقاط', 'المبلغ (ج.س)', 'الرصيد بعد']">
           <tr v-for="tx in transactions" :key="tx.id" class="hover:bg-slate-50 transition">
             <td class="p-3 text-slate-500">{{ formatDate(tx.created_at) }}</td>
             <td class="p-3 text-slate-600">{{ tx.transaction_type?.label || 'إيداع' }}</td>
             <td class="p-3 text-slate-600">{{ tx.description }}</td>
             <td class="p-3 text-center font-mono font-bold" :class="tx.amount > 0 ? 'text-emerald-600' : 'text-red-500'">
-              {{ tx.amount > 0 ? '+' : '' }}{{ formatCurrency(tx.amount) }}
+              {{ tx.amount > 0 ? '+' : '' }}{{ formatPoints(tx.amount) }}
             </td>
-            <td class="p-3 text-center font-mono font-bold text-slate-700">{{ formatCurrency(tx.balance_after) }}</td>
+            <td class="p-3 text-center font-mono font-bold text-slate-500">
+              {{ tx.money_equivalent != null ? (tx.money_equivalent > 0 ? '+' : '-') + formatMoney(Math.abs(tx.money_equivalent)) : '—' }}
+            </td>
+            <td class="p-3 text-center font-mono font-bold text-slate-700">{{ formatPoints(tx.balance_after) }}</td>
           </tr>
         </DataTable>
 
@@ -162,13 +179,14 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/lib/api'
-import { Wallet, CreditCard, TrendingUp, CheckCircle, XCircle } from 'lucide-vue-next'
+import { Wallet, CreditCard, TrendingUp, CheckCircle, XCircle, FileText } from 'lucide-vue-next'
 import PageHeader from '@/components/PageHeader.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import Card from '@/components/Card.vue'
 import StatTile from '@/components/StatTile.vue'
 import DataTable from '@/components/DataTable.vue'
 import Pagination from '@/components/Pagination.vue'
+import { formatPoints, formatMoney } from '@/utils/points'
 
 const wallet = ref(null)
 const loading = ref(true)
@@ -180,11 +198,17 @@ const depositHistory = ref([])
 const depositHistoryMeta = ref(null)
 const transactions = ref([])
 const transactionsMeta = ref(null)
+const rate = ref({ money_amount: null, point_amount: null })
 
 const depositForm = reactive({
   amount: 250,
   reference_number: '',
 })
+
+const moneyToPoints = (money) => {
+  if (!rate.value.money_amount) return 0
+  return (Number(money) || 0) * (rate.value.point_amount / rate.value.money_amount)
+}
 
 const fetchWallet = async () => {
   try {
@@ -217,8 +241,17 @@ const loadTransactions = async (page = 1) => {
   }
 }
 
+const loadRate = async () => {
+  try {
+    const response = await api.get('/point-settings')
+    rate.value = { money_amount: response.data.money_amount, point_amount: response.data.point_amount }
+  } catch (err) {
+    console.error('Failed to load point settings', err)
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([fetchWallet(), loadDepositHistory(), loadTransactions()])
+  await Promise.all([fetchWallet(), loadDepositHistory(), loadTransactions(), loadRate()])
 })
 
 const handleFileChange = (e) => {
@@ -255,6 +288,5 @@ const submitDeposit = async () => {
   }
 }
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 const formatDate = (date) => new Date(date).toLocaleDateString('ar-EG')
 </script>

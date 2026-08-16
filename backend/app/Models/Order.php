@@ -14,7 +14,7 @@ class Order extends Model
     use SoftDeletes, HasUuid;
 
     protected $fillable = ['uuid', 'order_number', 'agency_id', 'status_id', 'estimated_price', 'total_passengers', 'departure_date', 'return_date', 'metadata', 'created_by', 'updated_by'];
-    protected $casts = ['metadata' => 'json', 'departure_date' => 'date', 'return_date' => 'date'];
+    protected $casts = ['metadata' => 'json', 'departure_date' => 'date', 'return_date' => 'datetime'];
 
     public function agency(): BelongsTo
     {

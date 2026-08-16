@@ -25,7 +25,7 @@
         <template v-if="wallet">
           <!-- Amount -->
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5">مبلغ الشحن (USD)</label>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">مبلغ الشحن (ج.س)</label>
             <input
               v-model.number="topUpAmount"
               type="number"
@@ -34,6 +34,9 @@
               placeholder="0.00"
               class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
+            <p v-if="topUpAmount && rate.money_amount" class="text-[11px] font-semibold text-emerald-600 mt-1.5">
+              سيتم إضافة {{ formatPoints(moneyToPoints(topUpAmount)) }} للمحفظة (بمعدل: {{ rate.money_amount }} ج.س = {{ rate.point_amount }} نقطة)
+            </p>
           </div>
 
           <!-- Description -->
@@ -67,12 +70,12 @@
         <div class="bg-[#0f172a] rounded-2xl p-5 space-y-4">
           <div>
             <p class="text-[10px] text-slate-400">الرصيد الحالي</p>
-            <p class="text-3xl font-black text-emerald-400 font-mono mt-1">{{ formatCurrency(wallet.balance) }}</p>
+            <p class="text-3xl font-black text-emerald-400 font-mono mt-1">{{ formatPoints(wallet.balance) }}</p>
           </div>
           <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-800">
             <div>
               <p class="text-[10px] text-slate-400">حد الائتمان</p>
-              <p class="text-sm font-bold text-slate-200 font-mono mt-0.5">{{ formatCurrency(wallet.credit_limit) }}</p>
+              <p class="text-sm font-bold text-slate-200 font-mono mt-0.5">{{ formatPoints(wallet.credit_limit) }}</p>
             </div>
             <div>
               <p class="text-[10px] text-slate-400">الحالة</p>
@@ -107,7 +110,8 @@
               <th class="p-3 font-bold">الوكالة</th>
               <th class="p-3 font-bold">التاريخ</th>
               <th class="p-3 font-bold">رقم الإسناد / التحويل</th>
-              <th class="p-3 font-bold">المبلغ المطلوب</th>
+              <th class="p-3 font-bold">النقاط (تقديري)</th>
+              <th class="p-3 font-bold">المبلغ المطلوب (ج.س)</th>
               <th class="p-3 font-bold">الإيصال</th>
               <th class="p-3 font-bold text-center">الإجراءات</th>
             </tr>
@@ -117,9 +121,10 @@
               <td class="p-3 font-bold text-slate-800">{{ dep.wallet?.agency?.name || 'وكالة غير معروفة' }}</td>
               <td class="p-3 text-slate-500 font-mono">{{ formatDate(dep.created_at) }}</td>
               <td class="p-3 font-mono font-bold text-slate-700">{{ dep.metadata?.reference_number || dep.id }}</td>
-              <td class="p-3 font-mono font-black text-emerald-600">${{ parseFloat(dep.amount).toFixed(2) }}</td>
+              <td class="p-3 font-mono font-black text-emerald-600">{{ formatPoints(dep.amount) }}</td>
+              <td class="p-3 font-mono font-black text-slate-700">{{ formatMoney(dep.money_equivalent ?? dep.amount) }}</td>
               <td class="p-3">
-                <a v-if="dep.metadata?.receipt_path" :href="`/storage/${dep.metadata.receipt_path}`" target="_blank" class="text-amber-600 font-bold hover:underline inline-flex items-center gap-1">
+                <a v-if="dep.receipt_url" :href="dep.receipt_url" target="_blank" class="text-amber-600 font-bold hover:underline inline-flex items-center gap-1">
                   <FileText class="w-3.5 h-3.5" />
                   عرض الإيصال
                 </a>
@@ -151,6 +156,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
 import Pagination from '@/components/Pagination.vue'
+import { formatPoints, formatMoney } from '@/utils/points'
 
 const agencies = ref([])
 const wallet = ref(null)
@@ -162,6 +168,12 @@ const message = ref('')
 const messageClass = ref('')
 const pendingDeposits = ref([])
 const pendingDepositsMeta = ref(null)
+const rate = ref({ money_amount: null, point_amount: null })
+
+const moneyToPoints = (money) => {
+  if (!rate.value.money_amount) return 0
+  return (Number(money) || 0) * (rate.value.point_amount / rate.value.money_amount)
+}
 
 const loadPendingDeposits = async (page = 1) => {
   try {
@@ -173,11 +185,20 @@ const loadPendingDeposits = async (page = 1) => {
   }
 }
 
+const loadRate = async () => {
+  try {
+    const response = await api.get('/point-settings')
+    rate.value = { money_amount: response.data.money_amount, point_amount: response.data.point_amount }
+  } catch (err) {
+    console.error('Failed to load point settings', err)
+  }
+}
+
 onMounted(async () => {
   try {
     const response = await api.get('/agencies')
     agencies.value = response.data
-    await loadPendingDeposits()
+    await Promise.all([loadPendingDeposits(), loadRate()])
   } catch (err) {
     message.value = 'فشل تحميل البيانات'
     messageClass.value = 'bg-red-100 text-red-700'
@@ -244,6 +265,5 @@ const rejectDeposit = async (transactionId) => {
   }
 }
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 const formatDate = (date) => new Date(date).toLocaleString('ar-SA')
 </script>

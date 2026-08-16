@@ -42,6 +42,7 @@ const routes = [
       { path: 'orders/:id/price', name: 'admin.orders.price', component: () => import('@/views/admin/PricingForm.vue'), props: true },
       { path: 'agencies', name: 'admin.agencies', component: () => import('@/views/admin/AgencyList.vue') },
       { path: 'users', name: 'admin.users', component: () => import('@/views/admin/UserManagement.vue'), meta: { requireRole: 'super_admin' } },
+      { path: 'settings', name: 'admin.settings', component: () => import('@/views/admin/Settings.vue'), meta: { requireRole: 'super_admin' } },
       { path: 'wallet/topup', name: 'admin.wallet.topup', component: () => import('@/views/admin/WalletTopUp.vue') },
       { path: 'refunds', name: 'admin.refunds', component: () => import('@/views/admin/RefundQueue.vue') },
       { path: 'refunds/:id', name: 'admin.refunds.review', component: () => import('@/views/admin/RefundReview.vue'), props: true },

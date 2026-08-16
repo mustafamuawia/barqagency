@@ -37,7 +37,8 @@
                     @endif
                     <th>التاريخ</th>
                     <th>رقم التحويل</th>
-                    <th>المبلغ</th>
+                    <th>النقاط</th>
+                    <th>المبلغ (ج.س)</th>
                     <th>الحالة</th>
                 </tr>
             </thead>
@@ -49,12 +50,13 @@
                         @endif
                         <td>{{ $dep['date'] }}</td>
                         <td>{{ $dep['reference_number'] }}</td>
-                        <td>{{ number_format($dep['amount'], 3) }}</td>
+                        <td>{{ number_format($dep['points'], 3) }}</td>
+                        <td>{{ number_format($dep['money'], 3) }} ج.س</td>
                         <td>{{ $dep['status_label'] }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $agencyName ? 4 : 5 }}" style="text-align: center; color: #94a3b8;">لا توجد إشعارات إيداع في هذه الفترة</td>
+                        <td colspan="{{ $agencyName ? 5 : 6 }}" style="text-align: center; color: #94a3b8;">لا توجد إشعارات إيداع في هذه الفترة</td>
                     </tr>
                 @endforelse
             </tbody>

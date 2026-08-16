@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\Order\OrderController;
 use App\Http\Controllers\Api\V1\ReferenceData\ReferenceDataController;
 use App\Http\Controllers\Api\V1\Refund\RefundController;
 use App\Http\Controllers\Api\V1\Report\ReportController;
+use App\Http\Controllers\Api\V1\Settings\PointSettingController;
 use App\Http\Controllers\Api\V1\Wallet\WalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -75,6 +76,10 @@ Route::prefix('v1')->group(function () {
         Route::put('/refunds/{refund}/reject', [RefundController::class, 'reject'])->middleware('role:admin');
         Route::get('/refunds/{refund}/credit-note', [RefundController::class, 'creditNote']);
 
+        // Point settings (money-to-points conversion rate for the wallet)
+        Route::get('/point-settings', [PointSettingController::class, 'show']);
+        Route::put('/point-settings', [PointSettingController::class, 'update'])->middleware('role:super_admin');
+
         // Reports
         Route::get('/reports/financial-summary', [ReportController::class, 'financialSummary']);
         Route::get('/reports/financial-summary/pdf', [ReportController::class, 'financialSummaryPdf']);
@@ -86,6 +91,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/airports', [ReferenceDataController::class, 'airports']);
         Route::get('/cabin-classes', [ReferenceDataController::class, 'cabinClasses']);
         Route::get('/passenger-types', [ReferenceDataController::class, 'passengerTypes']);
+        Route::get('/countries', [ReferenceDataController::class, 'countries']);
 
         // Admin dashboard
         Route::get('/admin/dashboard', [DashboardController::class, 'index'])->middleware('role:admin');
@@ -96,6 +102,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/admin/notifications/unread-count', [\App\Http\Controllers\Api\V1\Admin\AppNotificationController::class, 'unreadCount']);
             Route::put('/admin/notifications/read-all', [\App\Http\Controllers\Api\V1\Admin\AppNotificationController::class, 'markAllRead']);
             Route::put('/admin/notifications/{id}/read', [\App\Http\Controllers\Api\V1\Admin\AppNotificationController::class, 'markRead']);
+        });
+
+        // Agency real-time notifications (same generic controller/service, scoped to the authenticated user)
+        Route::middleware(['role:agency', 'agency.active'])->group(function () {
+            Route::get('/agency/notifications', [\App\Http\Controllers\Api\V1\Admin\AppNotificationController::class, 'index']);
+            Route::get('/agency/notifications/unread-count', [\App\Http\Controllers\Api\V1\Admin\AppNotificationController::class, 'unreadCount']);
+            Route::put('/agency/notifications/read-all', [\App\Http\Controllers\Api\V1\Admin\AppNotificationController::class, 'markAllRead']);
+            Route::put('/agency/notifications/{id}/read', [\App\Http\Controllers\Api\V1\Admin\AppNotificationController::class, 'markRead']);
         });
 
         // Admin user management (super admin only)

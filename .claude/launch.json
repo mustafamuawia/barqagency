@@ -12,6 +12,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-lc", "cd /home/manar/Documents/barqagency/backend && exec php artisan serve --host=127.0.0.1 --port=8000"],
       "port": 8000
+    },
+    {
+      "name": "reverb",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "cd /home/manar/Documents/barqagency/backend && exec php artisan reverb:start"],
+      "port": 8080
     }
   ]
 }

@@ -25,14 +25,14 @@
           class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400">
           <option value="">-- اختر رقم الطلب --</option>
           <option v-for="order in eligibleOrders" :key="order.id" :value="order.id">
-            {{ order.order_number }} — {{ formatCurrency(order.latest_quote?.total_price) }}
+            {{ order.order_number }} — {{ formatMoney(order.latest_quote?.total_price) }}
           </option>
         </select>
       </div>
 
       <div v-if="selectedOrder" class="bg-[#0f172a] rounded-2xl p-5 flex items-center justify-between">
         <span class="text-[10px] text-slate-400">المبلغ الأصلي المدفوع</span>
-        <span class="text-2xl font-black text-emerald-400 font-mono">{{ formatCurrency(selectedOrder.latest_quote?.total_price) }}</span>
+        <span class="text-2xl font-black text-emerald-400 font-mono">{{ formatMoney(selectedOrder.latest_quote?.total_price) }}</span>
       </div>
 
       <div>
@@ -66,6 +66,7 @@ import LoadingState from '@/components/LoadingState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
+import { formatMoney } from '@/utils/points'
 
 const router = useRouter()
 const route = useRoute()
@@ -115,5 +116,4 @@ const handleSubmit = async () => {
   }
 }
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 </script>

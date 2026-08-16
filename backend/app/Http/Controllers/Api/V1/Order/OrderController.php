@@ -22,7 +22,11 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        $orders = $this->orderService->listForUser($request->user());
+        $validated = $request->validate([
+            'agency_id' => ['nullable', 'integer', 'exists:travel_agencies,id'],
+        ]);
+
+        $orders = $this->orderService->listForUser($request->user(), $validated['agency_id'] ?? null);
 
         return response()->json($orders);
     }

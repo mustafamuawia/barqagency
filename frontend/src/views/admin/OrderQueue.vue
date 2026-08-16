@@ -4,6 +4,13 @@
     <!-- Section Header -->
     <PageHeader title="قائمة الطلبات والحجوزات" subtitle="مراجعة طلبات الوكلاء وإرسال عروض الأسعار">
       <template #actions>
+        <select
+          v-model="agencyId"
+          class="border border-slate-200 rounded-xl px-4 py-2 text-xs w-44 focus:outline-none focus:ring-2 focus:ring-amber-400"
+        >
+          <option :value="null">جميع الوكالات</option>
+          <option v-for="agency in agencies" :key="agency.id" :value="agency.id">{{ agency.name }}</option>
+        </select>
         <input
           v-model="search"
           type="text"
@@ -38,16 +45,13 @@
           </td>
           <td class="p-3 text-center">
             <router-link
-              v-if="order.status?.name === 'pending_pricing'"
               :to="`/admin/orders/${order.id}/price`"
-              class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 transition shadow-sm"
+              class="font-bold px-4 py-2 rounded-xl text-[11px] inline-flex items-center gap-1.5 transition"
+              :class="action(order.status?.name).class"
             >
-              <Tag class="w-3.5 h-3.5" />
-              تسعير وإرسال عرض
+              <component :is="action(order.status?.name).icon" class="w-3.5 h-3.5" />
+              {{ action(order.status?.name).label }}
             </router-link>
-            <span v-else class="text-[10px] text-slate-400 px-3 py-2">
-              {{ order.status?.name === 'pricing_sent' ? 'بانتظار موافقة الوكيل' : 'تمت المعالجة' }}
-            </span>
           </td>
         </tr>
       </DataTable>
@@ -58,9 +62,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/lib/api'
-import { Tag } from 'lucide-vue-next'
+import { Tag, Pencil, Eye } from 'lucide-vue-next'
 import PageHeader from '@/components/PageHeader.vue'
 import Card from '@/components/Card.vue'
 import Badge from '@/components/Badge.vue'
@@ -70,9 +74,11 @@ import DataTable from '@/components/DataTable.vue'
 import Pagination from '@/components/Pagination.vue'
 
 const orders = ref([])
+const agencies = ref([])
 const meta = ref(null)
 const loading = ref(true)
 const search = ref('')
+const agencyId = ref(null)
 
 const filteredOrders = computed(() =>
   orders.value.filter(o =>
@@ -84,7 +90,9 @@ const filteredOrders = computed(() =>
 const loadOrders = async (page = 1) => {
   loading.value = true
   try {
-    const response = await api.get('/orders', { params: { page } })
+    const params = { page }
+    if (agencyId.value) params.agency_id = agencyId.value
+    const response = await api.get('/orders', { params })
     orders.value = response.data.data
     meta.value = response.data
   } catch (err) {
@@ -94,7 +102,47 @@ const loadOrders = async (page = 1) => {
   }
 }
 
-onMounted(loadOrders)
+const loadAgencies = async () => {
+  try {
+    const response = await api.get('/agencies')
+    agencies.value = response.data
+  } catch (err) {
+    console.error('Failed to load agencies', err)
+  }
+}
+
+/** Filtering is server-side, so a new agency always restarts at page 1. */
+watch(agencyId, () => loadOrders(1))
+
+onMounted(() => {
+  loadOrders()
+  loadAgencies()
+})
+
+/** The admin can revise the offer until the agency acts on it; after that it is read-only. */
+const action = (status) => {
+  if (status === 'pending_pricing') {
+    return {
+      label: 'تسعير وإرسال عرض',
+      icon: Tag,
+      class: 'bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm',
+    }
+  }
+
+  if (status === 'pricing_sent') {
+    return {
+      label: 'عرض وتعديل',
+      icon: Pencil,
+      class: 'bg-blue-500 hover:bg-blue-600 text-white shadow-sm',
+    }
+  }
+
+  return {
+    label: 'عرض التفاصيل',
+    icon: Eye,
+    class: 'bg-slate-100 hover:bg-slate-200 text-slate-700',
+  }
+}
 
 const statusColor = (status) => {
   const colors = {
