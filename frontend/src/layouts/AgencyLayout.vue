@@ -11,9 +11,9 @@
     <!-- Agency Sidebar Drawer -->
     <aside
       :class="sidebarOpen ? 'translate-x-0' : 'translate-x-full'"
-      class="fixed top-0 right-0 h-full w-72 bg-[#0b132b] text-white z-50 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col justify-between border-l border-slate-800"
+      class="fixed top-0 right-0 h-full w-72 bg-[#0b132b] text-white z-50 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-800"
     >
-      <div>
+      <div class="flex-shrink-0">
         <!-- Sidebar Header -->
         <div class="p-5 flex items-center justify-between border-b border-slate-800/80">
           <div class="flex items-center gap-2">
@@ -42,7 +42,10 @@
         </div>
 
         <!-- Nav Links -->
-        <nav v-if="auth.agencyStatus === 'active'" class="px-3 space-y-1 text-xs font-semibold">
+      </div>
+
+      <!-- Nav Links (scrollable, including on short landscape screens) -->
+      <nav v-if="auth.agencyStatus === 'active'" class="sidebar-nav flex-1 min-h-0 overflow-y-auto px-3 space-y-1 text-xs font-semibold">
           <router-link
             to="/agency"
             exact
@@ -113,11 +116,10 @@
             <UserCog class="w-4 h-4 text-slate-400" />
             <span>الملف الشخصي</span>
           </router-link>
-        </nav>
-      </div>
+      </nav>
 
       <!-- Sidebar Footer -->
-      <div class="p-4 border-t border-slate-800/80 bg-slate-900/50">
+      <div class="p-4 border-t border-slate-800/80 bg-slate-900/50 flex-shrink-0">
         <button
           @click="logout"
           class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition"
@@ -234,3 +236,23 @@ onUnmounted(() => {
   notifications.disconnectRealtime()
 })
 </script>
+
+<style scoped>
+.sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(51 65 85) transparent;
+}
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background-color: rgb(51 65 85);
+  border-radius: 9999px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(71 85 105);
+}
+</style>
