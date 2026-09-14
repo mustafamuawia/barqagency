@@ -157,7 +157,7 @@
         >
           <Wallet class="w-4 h-4 text-amber-400 shrink-0" />
           <span class="font-bold text-xs sm:text-sm" :class="balanceColor">
-            {{ balanceVisible ? formatPoints(wallet?.balance) : '••••••' }}
+            {{ balanceVisible ? (wallet ? formatPoints(wallet.balance) : '—') : '••••••' }}
           </span>
           <button
             @click="balanceVisible = !balanceVisible"
@@ -184,8 +184,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
@@ -198,6 +198,7 @@ import BarqLogo from '@/components/BarqLogo.vue'
 import { formatPoints } from '@/utils/points'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const notifications = useNotificationsStore()
 const sidebarOpen = ref(false)
@@ -231,6 +232,15 @@ onMounted(() => {
     loadWallet()
   }
 })
+
+// The layout stays mounted while navigating between agency pages. Reload the
+// balance after navigation so debits and top-ups are reflected in the header.
+watch(
+  () => route.fullPath,
+  () => {
+    if (auth.agencyStatus === 'active') loadWallet()
+  }
+)
 
 onUnmounted(() => {
   notifications.disconnectRealtime()
