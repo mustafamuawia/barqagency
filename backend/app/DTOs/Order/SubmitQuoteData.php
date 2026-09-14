@@ -7,7 +7,7 @@ use App\Http\Requests\Api\V1\Order\SubmitQuoteRequest;
 final readonly class SubmitQuoteData
 {
     /**
-     * @param  array<int, array{id: int, departure_datetime?: ?string, departure_terminal?: ?string}>  $flights
+     * @param  array<int, array{id: int, airline_id?: ?int, airline_name?: ?string, departure_datetime?: ?string, departure_terminal?: ?string}>  $flights
      */
     public function __construct(
         public float $basePrice,

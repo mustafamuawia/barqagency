@@ -13,8 +13,11 @@ class Order extends Model
 {
     use SoftDeletes, HasUuid;
 
-    protected $fillable = ['uuid', 'order_number', 'agency_id', 'status_id', 'estimated_price', 'total_passengers', 'departure_date', 'return_date', 'metadata', 'created_by', 'updated_by'];
-    protected $casts = ['metadata' => 'json', 'departure_date' => 'date', 'return_date' => 'datetime'];
+    protected $fillable = ['uuid', 'order_number', 'agency_id', 'status_id', 'estimated_price', 'total_passengers', 'departure_date', 'return_date', 'trip_type', 'ticket_path', 'ticket_uploaded_at', 'metadata', 'created_by', 'updated_by'];
+    protected $casts = ['metadata' => 'json', 'departure_date' => 'date', 'return_date' => 'datetime', 'ticket_uploaded_at' => 'datetime'];
+    // The stored path is an implementation detail; clients only need to know a ticket
+    // exists (ticket_uploaded_at) and fetch it through the dedicated download endpoint.
+    protected $hidden = ['ticket_path'];
 
     public function agency(): BelongsTo
     {
@@ -75,6 +78,11 @@ class Order extends Model
     public function canBeApproved(): bool
     {
         return $this->status->name === 'pricing_sent';
+    }
+
+    public function canHaveTicketUploaded(): bool
+    {
+        return in_array($this->status->name, ['approved', 'confirmed'], true);
     }
 
     public function scopePendingPricing($query)

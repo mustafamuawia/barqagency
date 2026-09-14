@@ -15,7 +15,7 @@
         </div>
         <div class="flex items-center justify-between gap-2">
           <span class="text-[10px] text-slate-400 shrink-0">نوع الرحلة</span>
-          <span class="text-sm font-bold text-slate-200">{{ order.return_date ? 'ذهاب وعودة' : 'ذهاب فقط' }}</span>
+          <span class="text-sm font-bold text-slate-200">{{ tripTypeLabel }}</span>
         </div>
         <div class="flex items-center justify-between gap-2">
           <span class="text-[10px] text-slate-400 shrink-0">تاريخ المغادرة</span>
@@ -98,8 +98,8 @@
 
         <div class="flex items-start justify-between gap-3">
           <div class="text-right">
-            <p class="font-black text-slate-900 text-lg font-mono">{{ seg.departure_airport?.code || '—' }}</p>
-            <p class="text-[11px] text-slate-500">{{ airportLabel(seg.departure_airport) }}</p>
+            <p class="font-black text-slate-900 text-lg font-mono">{{ seg.departure_airport?.code || seg.departure_airport_name || '—' }}</p>
+            <p class="text-[11px] text-slate-500">{{ airportLabel(seg.departure_airport, seg.departure_airport_name) }}</p>
             <p class="text-[11px] font-bold text-slate-700 mt-0.5">{{ formatFlightDateTime(seg.departure_datetime) }}</p>
             <p v-if="seg.departure_terminal" class="text-[11px] font-bold text-amber-700 mt-0.5">
               مبنى المغادرة: {{ seg.departure_terminal }}
@@ -113,8 +113,8 @@
           </div>
 
           <div class="text-left">
-            <p class="font-black text-slate-900 text-lg font-mono">{{ seg.arrival_airport?.code || '—' }}</p>
-            <p class="text-[11px] text-slate-500">{{ airportLabel(seg.arrival_airport) }}</p>
+            <p class="font-black text-slate-900 text-lg font-mono">{{ seg.arrival_airport?.code || seg.arrival_airport_name || '—' }}</p>
+            <p class="text-[11px] text-slate-500">{{ airportLabel(seg.arrival_airport, seg.arrival_airport_name) }}</p>
             <p class="text-[11px] font-bold text-slate-700 mt-0.5">{{ formatFlightDateTime(seg.arrival_datetime) }}</p>
           </div>
         </div>
@@ -233,6 +233,16 @@ const props = defineProps({
   isAdmin: { type: Boolean, default: false },
 })
 
+const tripTypeLabel = computed(() => {
+  const labels = {
+    one_way: 'ذهاب فقط',
+    round_trip: 'ذهاب وعودة',
+    multi_city: 'مدن متعددة',
+  }
+
+  return labels[props.order.trip_type] || (props.order.return_date ? 'ذهاب وعودة' : 'ذهاب فقط')
+})
+
 const sortedQuotes = computed(() =>
   [...(props.order.quotes || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 )
@@ -265,8 +275,8 @@ const flightLabel = (segment) => {
   return [prefix, segment.flight_number].filter(Boolean).join(' ') || '—'
 }
 
-const airportLabel = (airport) => {
-  if (!airport) return '—'
+const airportLabel = (airport, fallback) => {
+  if (!airport) return fallback || '—'
   return [airport.name, airport.city?.name].filter(Boolean).join(' • ') || '—'
 }
 

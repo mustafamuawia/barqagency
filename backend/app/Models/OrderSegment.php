@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderSegment extends Model
 {
-    protected $fillable = ['order_id', 'airline_id', 'departure_airport_id', 'arrival_airport_id', 'cabin_class_id', 'departure_datetime', 'departure_terminal', 'arrival_datetime', 'flight_number', 'aircraft_type', 'duration_minutes', 'sequence', 'metadata'];
+    protected $fillable = ['order_id', 'airline_id', 'departure_airport_id', 'departure_airport_name', 'arrival_airport_id', 'arrival_airport_name', 'cabin_class_id', 'departure_datetime', 'departure_terminal', 'arrival_datetime', 'flight_number', 'aircraft_type', 'duration_minutes', 'sequence', 'metadata'];
     protected $casts = ['departure_datetime' => 'datetime', 'arrival_datetime' => 'datetime', 'metadata' => 'json'];
 
     public function order(): BelongsTo { return $this->belongsTo(Order::class); }

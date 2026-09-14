@@ -18,13 +18,22 @@
         </h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">نوع الرحلة</label>
+            <select v-model="form.trip_type" required
+              class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400">
+              <option value="one_way">ذهاب فقط</option>
+              <option value="round_trip">ذهاب وعودة</option>
+              <option value="multi_city">مدن متعددة</option>
+            </select>
+          </div>
+          <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5">تاريخ المغادرة</label>
             <input v-model="form.departure_date" type="date" required
               class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5">تاريخ العودة (اختياري)</label>
-            <input v-model="form.return_date" type="date"
+          <div v-if="form.trip_type === 'round_trip'">
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">تاريخ العودة</label>
+            <input v-model="form.return_date" type="date" required
               class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
           <div>
@@ -42,15 +51,6 @@
         </h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5">شركة الطيران</label>
-            <input v-model="airlineQuery" type="text" list="airline-options" required
-              placeholder="ابحث عن شركة الطيران"
-              class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            <datalist id="airline-options">
-              <option v-for="airline in airlines" :key="airline.id" :value="airline.name" />
-            </datalist>
-          </div>
-          <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5">درجة السفر</label>
             <select v-model="segment.cabin_class_id" required
               class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400">
@@ -60,22 +60,14 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5">مطار المغادرة</label>
-            <input v-model="departureAirportQuery" type="text" list="airport-options" required
-              placeholder="ابحث عن المطار"
+            <input v-model="departureAirportQuery" type="text" required
+              placeholder="اكتب رمز أو اسم المطار"
               class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5">مطار الوصول</label>
-            <input v-model="arrivalAirportQuery" type="text" list="airport-options" required
-              placeholder="ابحث عن المطار"
-              class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            <datalist id="airport-options">
-              <option v-for="airport in airports" :key="airport.id" :value="airportLabel(airport)" />
-            </datalist>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5">وقت المغادرة (اختياري)</label>
-            <input v-model="segment.departure_datetime" type="datetime-local"
+            <input v-model="arrivalAirportQuery" type="text" required
+              placeholder="اكتب رمز أو اسم المطار"
               class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
         </div>
@@ -124,12 +116,9 @@
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1.5">الجنسية</label>
-              <input v-model="p.nationality" type="text" :list="`nationality-options-${i}`" required
-                placeholder="ابحث عن الجنسية"
+              <input v-model="p.nationality" type="text" required
+                placeholder="اكتب الجنسية"
                 class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-              <datalist :id="`nationality-options-${i}`">
-                <option v-for="country in countries" :key="country.id" :value="country.name" />
-              </datalist>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1.5">رقم جواز السفر</label>
@@ -168,23 +157,17 @@ const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 
-const airlines = ref([])
 const cabins = ref([])
-const airports = ref([])
 const passengerTypes = ref([])
-const countries = ref([])
 const titleOptions = ['السيد', 'السيدة', 'الآنسة']
 
 onMounted(async () => {
   try {
-    const [airlinesRes, cabinsRes, airportsRes, typesRes, countriesRes] = await Promise.all([
-      api.get('/airlines'), api.get('/cabin-classes'), api.get('/airports'), api.get('/passenger-types'), api.get('/countries'),
+    const [cabinsRes, typesRes] = await Promise.all([
+      api.get('/cabin-classes'), api.get('/passenger-types'),
     ])
-    airlines.value = airlinesRes.data
     cabins.value = cabinsRes.data
-    airports.value = airportsRes.data
     passengerTypes.value = typesRes.data
-    countries.value = countriesRes.data
     if (passengerTypes.value.length) {
       passengers.value.forEach((p) => { p.passenger_type_id = p.passenger_type_id || passengerTypes.value[0].id })
     }
@@ -194,8 +177,8 @@ onMounted(async () => {
 })
 
 const todayStr = () => new Date().toISOString().slice(0, 10)
-const form = ref({ departure_date: todayStr(), return_date: '', total_passengers: 1 })
-const segment = ref({ airline_id: '', departure_airport_id: '', arrival_airport_id: '', cabin_class_id: '', departure_datetime: '', sequence: 1 })
+const form = ref({ trip_type: 'one_way', departure_date: todayStr(), return_date: '', total_passengers: 1 })
+const segment = ref({ departure_airport_name: '', arrival_airport_name: '', cabin_class_id: '', sequence: 1 })
 
 const makePassenger = (sequence) => ({
   passenger_type_id: passengerTypes.value[0]?.id || '',
@@ -216,43 +199,29 @@ watch(() => form.value.total_passengers, (count) => {
   while (passengers.value.length > target) passengers.value.pop()
 })
 
-const airlineQuery = ref('')
 const departureAirportQuery = ref('')
 const arrivalAirportQuery = ref('')
 
-const airportLabel = (airport) => `${airport.code} - ${airport.name}`
 const normalize = (value) => value.trim().toLowerCase()
-
-const findAirlineByName = (name) => airlines.value.find((a) => normalize(a.name) === normalize(name))
-const findAirportByLabel = (label) => airports.value.find((a) => normalize(airportLabel(a)) === normalize(label))
 
 const handleSubmit = async () => {
   error.value = ''
 
-  const airlineName = airlineQuery.value.trim().replace(/\s+/g, ' ')
-  const airline = findAirlineByName(airlineName)
-  const departureAirport = findAirportByLabel(departureAirportQuery.value)
-  const arrivalAirport = findAirportByLabel(arrivalAirportQuery.value)
+  const departureAirport = departureAirportQuery.value.trim()
+  const arrivalAirport = arrivalAirportQuery.value.trim()
 
-  if (!airlineName) {
-    error.value = 'يرجى إدخال اسم شركة الطيران'
-    return
-  }
   if (!departureAirport || !arrivalAirport) {
-    error.value = 'يرجى اختيار مطار المغادرة والوصول من القائمة المقترحة'
+    error.value = 'يرجى إدخال مطار المغادرة ومطار الوصول'
     return
   }
-  if (departureAirport.id === arrivalAirport.id) {
+  if (normalize(departureAirport) === normalize(arrivalAirport)) {
     error.value = 'يجب أن يختلف مطار المغادرة عن مطار الوصول'
     return
   }
 
-  // An unlisted name is sent as-is; the API registers it as a new carrier.
-  segment.value.airline_id = airline?.id ?? null
-  segment.value.airline_name = airlineName
-  segment.value.departure_airport_id = departureAirport.id
-  segment.value.arrival_airport_id = arrivalAirport.id
-  segment.value.departure_datetime = segment.value.departure_datetime || null
+  segment.value.departure_airport_name = departureAirport
+  segment.value.arrival_airport_name = arrivalAirport
+  form.value.return_date = form.value.trip_type === 'round_trip' ? form.value.return_date || null : null
 
   loading.value = true
   try {

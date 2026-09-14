@@ -15,18 +15,18 @@ class StoreOrderRequest extends FormRequest
     {
         return [
             'agency_id' => 'sometimes|exists:travel_agencies,id',
+            'trip_type' => 'required|in:one_way,round_trip,multi_city',
             'departure_date' => 'required|date|after_or_equal:today',
-            'return_date' => 'nullable|date|after:departure_date',
+            'return_date' => 'required_if:trip_type,round_trip|nullable|date|after:departure_date',
             'total_passengers' => 'required|integer|min:1',
             // Every segment field needs a rule: as soon as one `segments.*` rule exists,
             // validated() returns only the nested keys that were validated.
             'segments' => 'required|array|min:1',
-            // A segment names its airline either by id (picked from the list) or by name,
-            // which is registered as a new carrier when it is not on the list yet.
             'segments.*.airline_id' => 'nullable|integer|exists:airlines,id',
-            'segments.*.airline_name' => 'required_without:segments.*.airline_id|nullable|string|max:255',
-            'segments.*.departure_airport_id' => 'required|integer|exists:airports,id',
-            'segments.*.arrival_airport_id' => 'required|integer|exists:airports,id',
+            'segments.*.departure_airport_id' => 'nullable|integer|exists:airports,id',
+            'segments.*.departure_airport_name' => 'required_without:segments.*.departure_airport_id|nullable|string|max:255',
+            'segments.*.arrival_airport_id' => 'nullable|integer|exists:airports,id',
+            'segments.*.arrival_airport_name' => 'required_without:segments.*.arrival_airport_id|nullable|string|max:255',
             'segments.*.cabin_class_id' => 'required|integer|exists:cabin_classes,id',
             'segments.*.departure_datetime' => 'nullable|date',
             'segments.*.arrival_datetime' => 'nullable|date',
@@ -36,10 +36,4 @@ class StoreOrderRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'segments.*.airline_name.required_without' => 'يرجى إدخال اسم شركة الطيران.',
-        ];
-    }
 }

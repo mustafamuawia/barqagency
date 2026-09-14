@@ -46,6 +46,29 @@
                   {{ flight.route }}
                 </span>
                 <span class="text-[10px] text-slate-500">الرحلة {{ index + 1 }}</span>
+                <button v-if="!flight.id" type="button" @click="removeFlight(index)" class="text-[10px] font-bold text-red-600 hover:underline">حذف</button>
+              </div>
+
+              <div v-if="!flight.id" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">مطار المغادرة</label>
+                  <input v-model="flight.departure_airport_name" type="text" required placeholder="اكتب مطار المغادرة"
+                    class="w-full border border-slate-200 rounded-xl px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">مطار الوصول</label>
+                  <input v-model="flight.arrival_airport_name" type="text" required placeholder="اكتب مطار الوصول"
+                    class="w-full border border-slate-200 rounded-xl px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">شركة الطيران</label>
+                <input v-model="flight.airline_name" type="text" required placeholder="اكتب شركة الطيران"
+                  class="w-full border border-slate-200 rounded-xl px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                <p v-if="fieldErrors[`flights.${index}.airline_name`]" class="text-[10px] text-red-600 font-semibold mt-1">
+                  {{ fieldErrors[`flights.${index}.airline_name`] }}
+                </p>
               </div>
 
               <div>
@@ -69,15 +92,11 @@
               </div>
             </div>
 
-            <!-- Round trip: return date and time -->
-            <div v-if="isRoundTrip" class="bg-slate-50 rounded-xl p-3 border border-slate-200">
-              <label class="block text-[11px] font-semibold text-slate-600 mb-1">تاريخ ووقت العودة</label>
-              <input v-model="form.return_date" type="datetime-local"
-                class="w-full border border-slate-200 rounded-xl px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
-              <p v-if="fieldErrors.return_date" class="text-[10px] text-red-600 font-semibold mt-1">
-                {{ fieldErrors.return_date }}
-              </p>
-            </div>
+            <button type="button" @click="addFlight"
+              class="w-full border border-dashed border-amber-400 text-amber-700 hover:bg-amber-50 rounded-xl py-2 text-xs font-bold transition">
+              {{ addFlightLabel }}
+            </button>
+
           </div>
 
           <div>
@@ -116,6 +135,29 @@
           </Button>
         </form>
       </Card>
+
+      <!-- Ticket upload: available once the agency has approved the order -->
+      <Card v-if="canUploadTicket" class="space-y-4 lg:sticky lg:top-6">
+        <h3 class="font-bold text-sm text-slate-900">تذكرة السفر</h3>
+
+        <p v-if="order.ticket_uploaded_at" class="text-xs text-emerald-700 bg-emerald-50 rounded-xl p-3 border border-emerald-200">
+          تم رفع التذكرة بتاريخ {{ formatDateTime(order.ticket_uploaded_at) }}. يمكنك رفع ملف جديد لاستبدالها.
+        </p>
+        <p v-else class="text-xs text-slate-500 bg-slate-50 rounded-xl p-3 border border-slate-200">
+          ارفع ملف التذكرة بصيغة PDF لتأكيد الحجز وإشعار الوكيل بأن التذكرة جاهزة للتنزيل.
+        </p>
+
+        <input type="file" accept="application/pdf" @change="handleTicketFileChange"
+          class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white" />
+
+        <p v-if="ticketFieldError" class="text-[10px] text-red-600 font-semibold">{{ ticketFieldError }}</p>
+        <div v-if="ticketError" class="bg-red-100 text-red-700 text-xs font-semibold p-3 rounded-xl">{{ ticketError }}</div>
+
+        <Button variant="amber" size="md" block :disabled="!ticketFile || uploadingTicket" @click="uploadTicket">
+          <Send class="w-4 h-4" />
+          {{ uploadingTicket ? 'جارٍ الرفع...' : (order.ticket_uploaded_at ? 'استبدال التذكرة' : 'رفع التذكرة وتأكيد الحجز') }}
+        </Button>
+      </Card>
     </div>
 
     <div v-else-if="error" class="bg-red-100 text-red-700 text-xs font-semibold p-4 rounded-2xl">{{ error }}</div>
@@ -144,13 +186,24 @@ const submitting = ref(false)
 const error = ref('')
 const fieldErrors = ref({})
 
-const form = ref({ base_price: 0, taxes: 0, fees: 0, total_price: 0, remarks: '', return_date: '' })
+const form = ref({ base_price: 0, taxes: 0, fees: 0, total_price: 0, remarks: '' })
 const flights = ref([])
+
+const ticketFile = ref(null)
+const uploadingTicket = ref(false)
+const ticketError = ref('')
+const ticketFieldError = ref('')
 
 // The admin can still change the offer until the agency acts on it.
 const canEdit = computed(() => ['pending_pricing', 'pricing_sent'].includes(order.value?.status?.name))
 const isRevision = computed(() => order.value?.status?.name === 'pricing_sent')
-const isRoundTrip = computed(() => Boolean(order.value?.return_date))
+const isRoundTrip = computed(() => order.value?.trip_type === 'round_trip')
+const canUploadTicket = computed(() => ['approved', 'confirmed'].includes(order.value?.status?.name))
+const addFlightLabel = computed(() => {
+  if (isRoundTrip.value) return 'إضافة رحلة العودة'
+  if (order.value?.trip_type === 'multi_city') return 'إضافة مرحلة جديدة'
+  return 'إضافة رحلة أخرى'
+})
 
 const pageTitle = computed(() => (isRevision.value ? 'تفاصيل الطلب وتعديل العرض' : 'تفاصيل الطلب والتسعير'))
 const pageSubtitle = computed(() =>
@@ -175,6 +228,13 @@ const latestQuote = computed(() => {
  */
 const toDateTimeInput = (value) => (value ? String(value).slice(0, 16) : '')
 
+const formatDateTime = (value) => {
+  if (!value) return '—'
+  return new Date(value).toLocaleString('ar-EG', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  })
+}
+
 onMounted(async () => {
   try {
     const response = await api.get(`/orders/${props.id}`)
@@ -182,12 +242,11 @@ onMounted(async () => {
 
     flights.value = (order.value.segments || []).map((segment) => ({
       id: segment.id,
-      route: `${segment.departure_airport?.code || '—'} → ${segment.arrival_airport?.code || '—'}`,
+      route: `${segment.departure_airport?.code || segment.departure_airport_name || '—'} → ${segment.arrival_airport?.code || segment.arrival_airport_name || '—'}`,
+      airline_name: segment.airline?.name || '',
       departure_datetime: toDateTimeInput(segment.departure_datetime),
       departure_terminal: segment.departure_terminal || '',
     }))
-
-    form.value.return_date = toDateTimeInput(order.value.return_date)
 
     // Editing an offer already sent: start from what the agency is currently looking at.
     if (latestQuote.value) {
@@ -208,6 +267,48 @@ const recalcTotal = () => {
   form.value.total_price = (Number(form.value.base_price) || 0) + (Number(form.value.taxes) || 0) + (Number(form.value.fees) || 0)
 }
 
+const addFlight = () => {
+  flights.value.push({
+    id: null,
+    route: 'مرحلة جديدة',
+    departure_airport_name: '',
+    arrival_airport_name: '',
+    airline_name: '',
+    departure_datetime: '',
+    departure_terminal: '',
+  })
+}
+
+const removeFlight = (index) => flights.value.splice(index, 1)
+
+const handleTicketFileChange = (e) => {
+  ticketFile.value = e.target.files?.[0] || null
+}
+
+const uploadTicket = async () => {
+  if (!ticketFile.value) return
+
+  uploadingTicket.value = true
+  ticketError.value = ''
+  ticketFieldError.value = ''
+
+  const formData = new FormData()
+  formData.append('ticket', ticketFile.value)
+
+  try {
+    const response = await api.post(`/orders/${props.id}/ticket`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    order.value = response.data.order
+    ticketFile.value = null
+  } catch (err) {
+    ticketFieldError.value = err.response?.data?.errors?.ticket?.[0] || ''
+    ticketError.value = err.response?.data?.message || 'فشل رفع التذكرة'
+  } finally {
+    uploadingTicket.value = false
+  }
+}
+
 const submitQuote = async () => {
   submitting.value = true
   error.value = ''
@@ -216,9 +317,11 @@ const submitQuote = async () => {
   try {
     await api.put(`/orders/${props.id}/quote`, {
       ...form.value,
-      return_date: isRoundTrip.value ? form.value.return_date || null : null,
-      flights: flights.value.map(({ id, departure_datetime, departure_terminal }) => ({
+      flights: flights.value.map(({ id, airline_name, departure_airport_name, arrival_airport_name, departure_datetime, departure_terminal }) => ({
         id,
+        airline_name: airline_name.trim(),
+        departure_airport_name: departure_airport_name?.trim() || null,
+        arrival_airport_name: arrival_airport_name?.trim() || null,
         departure_datetime: departure_datetime || null,
         departure_terminal: departure_terminal.trim(),
       })),

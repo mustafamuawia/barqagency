@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Order\StoreOrderFromItineraryRequest;
 use App\Http\Requests\Api\V1\Order\StoreOrderRequest;
 use App\Http\Requests\Api\V1\Order\SubmitQuoteRequest;
+use App\Http\Requests\Api\V1\Order\UploadTicketRequest;
 use App\Http\Resources\Api\V1\Order\OrderResource;
 use App\Models\Order;
 use App\Services\Order\OrderService;
@@ -77,5 +78,22 @@ class OrderController extends Controller
             'message' => 'Order approved',
             'order' => new OrderResource($order),
         ]);
+    }
+
+    public function uploadTicket(UploadTicketRequest $request, Order $order)
+    {
+        $this->orderService->uploadTicket($order, $request->file('ticket'));
+
+        $order = $this->orderService->findForUser($request->user(), $order);
+
+        return response()->json([
+            'message' => 'Ticket uploaded',
+            'order' => new OrderResource($order),
+        ]);
+    }
+
+    public function downloadTicket(Request $request, Order $order)
+    {
+        return $this->orderService->downloadTicket($request->user(), $order);
     }
 }

@@ -46,6 +46,18 @@
           {{ approving ? 'جارٍ المعالجة...' : 'موافقة وتأكيد الحجز' }}
         </Button>
 
+        <Button
+          v-if="order.ticket_uploaded_at"
+          variant="amber"
+          size="md"
+          block
+          @click="downloadTicket"
+          :disabled="downloadingTicket"
+        >
+          <FileDown class="w-4 h-4" />
+          {{ downloadingTicket ? 'جارٍ التنزيل...' : 'تنزيل تذكرة السفر' }}
+        </Button>
+
         <router-link
           v-if="['approved', 'confirmed'].includes(order.status?.name)"
           :to="`/agency/refunds/new?order_id=${order.id}`"
@@ -64,19 +76,21 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/lib/api'
-import { ArrowRight, CheckCircle, RotateCcw } from 'lucide-vue-next'
+import { ArrowRight, CheckCircle, RotateCcw, FileDown } from 'lucide-vue-next'
 import PageHeader from '@/components/PageHeader.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
 import OrderDetailsPanel from '@/components/OrderDetailsPanel.vue'
 import { formatMoney } from '@/utils/points'
+import { downloadFile } from '@/lib/download'
 
 const props = defineProps({ id: [String, Number] })
 
 const order = ref(null)
 const loading = ref(true)
 const approving = ref(false)
+const downloadingTicket = ref(false)
 const error = ref('')
 
 const latestQuote = computed(() => {
@@ -108,6 +122,19 @@ const approveOrder = async () => {
     error.value = err.response?.data?.message || 'فشل تأكيد الطلب'
   } finally {
     approving.value = false
+  }
+}
+
+const downloadTicket = async () => {
+  downloadingTicket.value = true
+  error.value = ''
+  try {
+    const response = await api.get(`/orders/${props.id}/ticket`, { responseType: 'blob' })
+    downloadFile(response.data, `ticket-${order.value.order_number}.pdf`)
+  } catch (err) {
+    error.value = 'فشل تنزيل التذكرة'
+  } finally {
+    downloadingTicket.value = false
   }
 }
 </script>

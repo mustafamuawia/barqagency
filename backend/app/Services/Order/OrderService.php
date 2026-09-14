@@ -9,6 +9,7 @@ use App\Exceptions\InsufficientWalletBalanceException;
 use App\Exceptions\InvalidOrderStatusException;
 use App\Exceptions\MissingAgencyException;
 use App\Exceptions\MissingQuoteException;
+use App\Exceptions\MissingTicketException;
 use App\Helpers\ReferenceNumberGenerator;
 use App\Models\Order;
 use App\Models\OrderStatus;
@@ -21,6 +22,7 @@ use App\Notifications\Admin\NewOrderRequestNotification;
 use App\Notifications\Admin\OrderApprovedNotification;
 use App\Notifications\CreditLimitReachedNotification;
 use App\Notifications\QuoteUpdatedNotification;
+use App\Notifications\TicketUploadedNotification;
 use App\Traits\AuthorizesAgencyOwnership;
 use App\Services\Audit\AuditLogger;
 use App\Services\FlightSearch\ReferenceResolver;
@@ -28,8 +30,11 @@ use App\Services\Notification\AdminNotifier;
 use App\Services\Notification\AgencyNotifier;
 use App\Services\Settings\PointSettingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderService
 {
@@ -102,15 +107,13 @@ class OrderService
                 'agency_id' => $agencyId,
                 'status_id' => $status->id,
                 'total_passengers' => $data->totalPassengers,
+                'trip_type' => $data->tripType,
                 'departure_date' => $data->departureDate,
                 'return_date' => $data->returnDate,
                 'created_by' => auth()->id(),
             ]);
 
             foreach ($data->segments as $segment) {
-                $segment['airline_id'] = $this->resolveAirlineId($segment);
-                unset($segment['airline_name']);
-
                 $order->segments()->create($segment);
             }
 
@@ -294,19 +297,6 @@ class OrderService
     }
 
     /**
-     * A segment carries either a known airline id or a name the agency typed, which is
-     * registered as a new carrier when it does not match anything yet.
-     */
-    private function resolveAirlineId(array $segment): int
-    {
-        if (filled($segment['airline_id'] ?? null)) {
-            return (int) $segment['airline_id'];
-        }
-
-        return $this->referenceResolver->findOrCreateAirlineByName($segment['airline_name'])->id;
-    }
-
-    /**
      * Records the departure time and hall the admin confirmed for each flight, plus the
      * return date and time on a round trip. Fields left blank are not overwritten.
      */
@@ -314,10 +304,22 @@ class OrderService
     {
         if ($data->flights !== []) {
             $segments = $order->segments()->get()->keyBy('id');
+            $nextSequence = ($segments->max('sequence') ?? 0) + 1;
+            $defaultCabinClassId = $segments->first()?->cabin_class_id;
 
             foreach ($data->flights as $flight) {
-                $segment = $segments->get($flight['id']);
+                $segment = isset($flight['id']) ? $segments->get($flight['id']) : null;
+
                 if (!$segment) {
+                    $order->segments()->create([
+                        'airline_id' => $this->resolveFlightAirlineId($flight),
+                        'departure_airport_name' => $flight['departure_airport_name'],
+                        'arrival_airport_name' => $flight['arrival_airport_name'],
+                        'cabin_class_id' => $defaultCabinClassId,
+                        'departure_datetime' => $flight['departure_datetime'] ?? null,
+                        'departure_terminal' => $flight['departure_terminal'] ?: null,
+                        'sequence' => $nextSequence++,
+                    ]);
                     continue;
                 }
 
@@ -326,6 +328,10 @@ class OrderService
                 // Only ever set a departure time, never blank an existing one.
                 if (filled($flight['departure_datetime'] ?? null)) {
                     $updates['departure_datetime'] = $flight['departure_datetime'];
+                }
+
+                if (filled($flight['airline_id'] ?? null) || filled($flight['airline_name'] ?? null)) {
+                    $updates['airline_id'] = $this->resolveFlightAirlineId($flight);
                 }
 
                 // The hall is optional, so an empty value is a deliberate clear.
@@ -344,6 +350,15 @@ class OrderService
         }
 
         $order->load('segments');
+    }
+
+    private function resolveFlightAirlineId(array $flight): int
+    {
+        if (filled($flight['airline_id'] ?? null)) {
+            return (int) $flight['airline_id'];
+        }
+
+        return $this->referenceResolver->findOrCreateAirlineByName($flight['airline_name'])->id;
     }
 
     public function approve(User $user, Order $order): Order
@@ -420,5 +435,47 @@ class OrderService
 
             throw $e;
         }
+    }
+
+    /**
+     * Attaches the issued ticket PDF once the agency has approved the order, and confirms
+     * the booking. The admin may re-upload to replace a ticket already on a confirmed order.
+     */
+    public function uploadTicket(Order $order, UploadedFile $file): Order
+    {
+        if (!$order->canHaveTicketUploaded()) {
+            throw new InvalidOrderStatusException('لا يمكن رفع التذكرة قبل موافقة الوكالة على الطلب');
+        }
+
+        $isReplacement = $order->status->name === 'confirmed';
+
+        return DB::transaction(function () use ($order, $file, $isReplacement) {
+            $path = $file->storeAs("tickets/{$order->agency_id}/{$order->order_number}", 'ticket.pdf', 'local');
+
+            $order->update([
+                'ticket_path' => $path,
+                'ticket_uploaded_at' => now(),
+            ]);
+
+            $order->transitionTo('confirmed', $isReplacement ? 'تم تحديث تذكرة السفر' : 'تم رفع تذكرة السفر وتأكيد الحجز');
+
+            $this->audit->log('order.ticket_uploaded', $order, [], ['order_number' => $order->order_number]);
+
+            $order->loadMissing('agency');
+            $this->agencyNotifier->send($order->agency, new TicketUploadedNotification($order));
+
+            return $order->fresh(['status']);
+        });
+    }
+
+    public function downloadTicket(User $user, Order $order): StreamedResponse
+    {
+        $this->assertOwnsResource($user, $order->agency_id);
+
+        if (!$order->ticket_path) {
+            throw new MissingTicketException();
+        }
+
+        return Storage::disk('local')->download($order->ticket_path, "ticket-{$order->order_number}.pdf");
     }
 }

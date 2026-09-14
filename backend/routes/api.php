@@ -42,6 +42,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/orders/book-itinerary', [OrderController::class, 'bookItinerary'])->middleware(['role:agency', 'agency.active']);
         Route::put('/orders/{order}/quote', [OrderController::class, 'submitQuote'])->middleware('role:admin');
         Route::put('/orders/{order}/approve', [OrderController::class, 'approveOrder'])->middleware(['role:agency', 'agency.active']);
+        Route::post('/orders/{order}/ticket', [OrderController::class, 'uploadTicket'])->middleware('role:admin');
+        Route::get('/orders/{order}/ticket', [OrderController::class, 'downloadTicket']);
 
         // Wallets
         Route::get('/wallets', [WalletController::class, 'myWallet'])->middleware(['role:agency', 'agency.active']);
