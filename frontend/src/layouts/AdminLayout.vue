@@ -119,6 +119,17 @@
           </router-link>
 
           <router-link
+            v-if="auth.isSuperAdmin"
+            to="/admin/bank-accounts"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
+            :class="$route.path.startsWith('/admin/bank-accounts') ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+            @click="closeSidebar"
+          >
+            <Landmark class="w-4 h-4 text-emerald-400" />
+            <span>الحسابات البنكية</span>
+          </router-link>
+
+          <router-link
             to="/admin/reports"
             class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition"
             :class="$route.path.startsWith('/admin/reports') ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
@@ -221,7 +232,7 @@ import { useNotificationsStore } from '@/stores/notifications'
 import NotificationBell from '@/components/NotificationBell.vue'
 import {
   Menu, X, ShieldCheck, LayoutDashboard, Ticket, Wallet, Users, UsersRound,
-  Settings, ShieldAlert, LogOut, Shield, RotateCcw, FileText, History, UserCog
+  Settings, ShieldAlert, LogOut, Shield, RotateCcw, FileText, History, UserCog, Landmark
 } from 'lucide-vue-next'
 import BarqLogo from '@/components/BarqLogo.vue'
 

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\Order\OrderController;
 use App\Http\Controllers\Api\V1\ReferenceData\ReferenceDataController;
 use App\Http\Controllers\Api\V1\Refund\RefundController;
 use App\Http\Controllers\Api\V1\Report\ReportController;
+use App\Http\Controllers\Api\V1\Settings\BankAccountController;
 use App\Http\Controllers\Api\V1\Settings\PointSettingController;
 use App\Http\Controllers\Api\V1\Wallet\WalletController;
 use Illuminate\Support\Facades\Route;
@@ -81,6 +82,15 @@ Route::prefix('v1')->group(function () {
         // Point settings (money-to-points conversion rate for the wallet)
         Route::get('/point-settings', [PointSettingController::class, 'show']);
         Route::put('/point-settings', [PointSettingController::class, 'update'])->middleware('role:super_admin');
+
+        // Bank accounts (transfer instructions shown to agencies on the wallet page)
+        Route::get('/bank-accounts', [BankAccountController::class, 'index']);
+        Route::middleware('role:super_admin')->group(function () {
+            Route::get('/admin/bank-accounts', [BankAccountController::class, 'adminIndex']);
+            Route::post('/admin/bank-accounts', [BankAccountController::class, 'store']);
+            Route::put('/admin/bank-accounts/{bankAccount}', [BankAccountController::class, 'update']);
+            Route::delete('/admin/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy']);
+        });
 
         // Reports
         Route::get('/reports/financial-summary', [ReportController::class, 'financialSummary']);

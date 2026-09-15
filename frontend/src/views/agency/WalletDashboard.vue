@@ -41,11 +41,16 @@
         <!-- Bank Account Details -->
         <Card class="space-y-3">
           <h3 class="font-bold text-sm text-slate-900 border-b pb-2">معلومات التحويل البنكي</h3>
-          <div class="space-y-2 text-xs">
-            <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">اسم البنك:</span> <span class="font-bold text-left">البنك الأهلي التجاري (SNB)</span></div>
-            <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">اسم الحساب:</span> <span class="font-bold text-left">شركة سكاي بلان المحدودة / برق LLC</span></div>
-            <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">رقم الحساب:</span> <span class="font-mono font-bold break-all text-left">966-2244-6688-22</span></div>
-            <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">رقم IBAN:</span> <span class="font-mono font-bold text-[11px] break-all text-left">SA9340000009662244668822</span></div>
+          <div v-if="!bankAccounts.length" class="text-xs text-slate-400 text-center py-4">
+            لا توجد حسابات بنكية متاحة حالياً
+          </div>
+          <div v-else class="space-y-4">
+            <div v-for="(account, index) in bankAccounts" :key="account.id" class="space-y-2 text-xs" :class="index > 0 ? 'pt-3 border-t border-dashed border-slate-200' : ''">
+              <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">اسم البنك:</span> <span class="font-bold text-left">{{ account.bank_name }}</span></div>
+              <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">اسم الحساب:</span> <span class="font-bold text-left">{{ account.account_name }}</span></div>
+              <div class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">رقم الحساب:</span> <span class="font-mono font-bold break-all text-left">{{ account.account_number }}</span></div>
+              <div v-if="account.iban" class="flex flex-wrap justify-between gap-x-2"><span class="text-slate-400 shrink-0">رقم IBAN:</span> <span class="font-mono font-bold text-[11px] break-all text-left">{{ account.iban }}</span></div>
+            </div>
           </div>
         </Card>
 
@@ -199,6 +204,7 @@ const depositHistoryMeta = ref(null)
 const transactions = ref([])
 const transactionsMeta = ref(null)
 const rate = ref({ money_amount: null, point_amount: null })
+const bankAccounts = ref([])
 
 const depositForm = reactive({
   amount: 250,
@@ -250,8 +256,17 @@ const loadRate = async () => {
   }
 }
 
+const loadBankAccounts = async () => {
+  try {
+    const response = await api.get('/bank-accounts')
+    bankAccounts.value = response.data.data
+  } catch (err) {
+    console.error('Failed to load bank accounts', err)
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([fetchWallet(), loadDepositHistory(), loadTransactions(), loadRate()])
+  await Promise.all([fetchWallet(), loadDepositHistory(), loadTransactions(), loadRate(), loadBankAccounts()])
 })
 
 const handleFileChange = (e) => {
