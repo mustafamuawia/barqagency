@@ -38,7 +38,6 @@
           <!-- Heading -->
           <div class="space-y-1">
             <h2 class="text-2xl font-black text-slate-900">تسجيل دخول الوكيل</h2>
-            <p class="text-xs text-slate-400">يرجى تسجيل الدخول إلى منصة Barq Agency B2B لتتمكن من البحث والدفع</p>
           </div>
 
           <!-- Error -->
@@ -74,7 +73,7 @@
               :disabled="loading"
               class="w-full bg-[#0f172a] hover:bg-[#1e293b] disabled:opacity-50 text-white font-bold py-3.5 rounded-2xl text-xs sm:text-sm transition shadow-md active:scale-[0.99] mt-2"
             >
-              {{ loading ? 'جارٍ تسجيل الدخول...' : 'دخول لوحة التحكم B2B' }}
+              {{ loading ? 'جارٍ تسجيل الدخول...' : 'دخول لوحة التحكم' }}
             </button>
 
             <router-link to="/forgot-password" class="block text-xs text-amber-600 font-bold hover:underline">

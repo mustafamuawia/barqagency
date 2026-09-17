@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Bell, Ticket, Wallet, RotateCcw, Users, AlertTriangle } from 'lucide-vue-next'
 import { useNotificationsStore } from '@/stores/notifications'
@@ -107,8 +107,4 @@ const relativeTime = (dateStr) => {
   const days = Math.floor(hours / 24)
   return `منذ ${days} يوم`
 }
-
-onMounted(() => {
-  notifications.loadUnreadCount()
-})
 </script>
