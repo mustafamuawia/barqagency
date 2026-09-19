@@ -123,6 +123,6 @@ class ReportService
         return (float) WalletTransaction::whereHas('transactionType', fn ($q) => $q->where('name', $transactionType))
             ->whereBetween('created_at', [$filter->from, $filter->to])
             ->when($agencyId, fn ($q) => $q->whereHas('wallet', fn ($w) => $w->where('agency_id', $agencyId)))
-            ->sum('amount');
+            ->sum('money_equivalent');
     }
 }

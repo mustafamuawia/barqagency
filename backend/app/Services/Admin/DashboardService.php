@@ -31,12 +31,12 @@ class DashboardService
         $totalBookings = WalletTransaction::whereHas('transactionType', fn ($q) => $q->where('name', 'booking_debit'))
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->sum('amount');
+            ->sum('money_equivalent');
 
         $totalRefunds = WalletTransaction::whereHas('transactionType', fn ($q) => $q->where('name', 'refund_credit'))
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->sum('amount');
+            ->sum('money_equivalent');
 
         return [
             'stats' => [
