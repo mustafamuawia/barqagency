@@ -19,7 +19,7 @@ class NewWalletDepositNotification extends Notification
     public function toArray(?object $notifiable): array
     {
         $agencyName = $this->transaction->wallet?->agency?->name;
-        $amount = number_format((float) $this->transaction->amount, 2);
+        $amount = number_format((float) $this->transaction->money_equivalent, 2) . ' ج.س';
         $referenceNumber = $this->transaction->metadata['reference_number'] ?? null;
         $suffix = $referenceNumber ? " (مرجع: {$referenceNumber})" : '';
 

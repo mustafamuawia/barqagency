@@ -13,7 +13,11 @@ return new class extends Migration
             $table->string('email_verification_token')->nullable()->unique()->after('email_verified_at');
         });
 
-        DB::statement("ALTER TABLE travel_agencies MODIFY status ENUM('pending', 'active', 'suspended', 'inactive', 'rejected') DEFAULT 'pending'");
+        // MySQL-specific column widening; sqlite (used by the test suite) has no native
+        // ENUM type and stores this column as a plain string, so there is nothing to widen.
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE travel_agencies MODIFY status ENUM('pending', 'active', 'suspended', 'inactive', 'rejected') DEFAULT 'pending'");
+        }
 
         Schema::table('travel_agencies', function (Blueprint $table) {
             $table->text('rejection_reason')->nullable()->after('status');
@@ -31,7 +35,9 @@ return new class extends Migration
             $table->dropColumn(['rejection_reason', 'reviewed_by', 'reviewed_at']);
         });
 
-        DB::statement("ALTER TABLE travel_agencies MODIFY status ENUM('active', 'suspended', 'inactive') DEFAULT 'active'");
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE travel_agencies MODIFY status ENUM('active', 'suspended', 'inactive') DEFAULT 'active'");
+        }
 
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('email_verification_token');
