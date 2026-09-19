@@ -4,6 +4,7 @@ namespace App\Services\Report;
 
 use App\DTOs\Report\ReportFilterData;
 use App\Models\Order;
+use App\Models\Refund;
 use App\Models\TravelAgency;
 use App\Models\User;
 use App\Models\WalletTransaction;
@@ -118,11 +119,31 @@ class ReportService
         ];
     }
 
+    /**
+     * Filters by the referenced order's/refund's created_at — not the transaction's own
+     * created_at (approval date) — so these totals always reconcile with the booking-history
+     * table above, which is filtered by order creation date. A transaction can be recorded
+     * days after the order/refund it belongs to was created; using the transaction's own date
+     * would silently include/exclude money for bookings the visible table doesn't show.
+     */
     private function walletSum(string $transactionType, ReportFilterData $filter, ?int $agencyId): float
     {
-        return (float) WalletTransaction::whereHas('transactionType', fn ($q) => $q->where('name', $transactionType))
-            ->whereBetween('created_at', [$filter->from, $filter->to])
-            ->when($agencyId, fn ($q) => $q->whereHas('wallet', fn ($w) => $w->where('agency_id', $agencyId)))
-            ->sum('money_equivalent');
+        $referenceTable = $transactionType === 'booking_debit' ? 'orders' : 'refunds';
+        $referenceClass = $transactionType === 'booking_debit' ? Order::class : Refund::class;
+
+        $query = WalletTransaction::query()
+            ->join($referenceTable, function ($join) use ($referenceTable, $referenceClass) {
+                $join->on('wallet_transactions.reference_id', '=', "{$referenceTable}.id")
+                    ->where('wallet_transactions.reference_type', '=', $referenceClass);
+            })
+            ->whereHas('transactionType', fn ($q) => $q->where('name', $transactionType))
+            ->whereBetween("{$referenceTable}.created_at", [$filter->from, $filter->to])
+            ->when($agencyId, fn ($q) => $q->whereHas('wallet', fn ($w) => $w->where('agency_id', $agencyId)));
+
+        if ($referenceTable === 'orders') {
+            $query->whereNull('orders.deleted_at');
+        }
+
+        return (float) $query->sum('wallet_transactions.money_equivalent');
     }
 }

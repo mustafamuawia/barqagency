@@ -19,6 +19,7 @@ use App\Services\Order\OrderService;
 use App\Services\Refund\RefundService;
 use App\Services\Report\ReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -247,4 +248,38 @@ test('GET /api/v1/reports/financial-summary returns money totals for an authenti
     expect((float) $response->json('totalBookings'))->toEqual(500.0)
         ->and((float) $response->json('totalRefunds'))->toEqual(100.0)
         ->and((float) $response->json('net'))->toEqual(400.0);
+});
+
+/**
+ * Regression coverage for a second bug found alongside the points-vs-money one: the
+ * financial-summary totals used to filter by WalletTransaction::created_at (the approval
+ * date) while the booking-history table above it filters by Order::created_at (the order's
+ * creation date). An order created before the filter's "from" date but approved after it
+ * would vanish from the visible table while its money still counted in the totals above —
+ * numbers that no longer reconciled with what was on screen. walletSum() now joins to the
+ * referenced order/refund and filters on ITS created_at, matching the table.
+ */
+test('ReportService::summary only counts orders whose own created_at falls in range, not the later approval date', function () {
+    ['admin' => $admin, 'agencyUser' => $agencyUser, 'order' => $order] = seedFinancialSummaryFixtures();
+
+    // Order created well before the filter window...
+    DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subDays(10)]);
+
+    // ...but approved (and thus debited) inside it.
+    $this->actingAs($agencyUser);
+    app(OrderService::class)->approve($agencyUser, $order->fresh());
+
+    $filter = new ReportFilterData(from: now()->subDay(), to: now()->addDay(), agencyId: null);
+
+    $orders = app(ReportService::class)->paginatedOrders($admin, $filter);
+    expect($orders->total())->toBe(0); // order correctly hidden — created outside the range
+
+    $summary = app(ReportService::class)->summary($admin, $filter);
+    expect($summary['totalBookings'])->toEqual(0.0) // must NOT count money from a booking the table doesn't show
+        ->and($summary['net'])->toEqual(0.0);
+
+    // Widening the range to cover the order's actual creation date brings it back into both.
+    $widerFilter = new ReportFilterData(from: now()->subDays(11), to: now()->addDay(), agencyId: null);
+    $widerSummary = app(ReportService::class)->summary($admin, $widerFilter);
+    expect($widerSummary['totalBookings'])->toEqual(500.0);
 });
