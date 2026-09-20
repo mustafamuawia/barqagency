@@ -21,8 +21,8 @@ class VerifyAgencyEmailNotification extends Notification
         $url = rtrim(config('app.frontend_url'), '/').'/verify-email?token='.$this->token.'&email='.urlencode($notifiable->email);
 
         return (new MailMessage)
-            ->subject('تفعيل بريدك الإلكتروني - Barq Agency')
-            ->line('شكراً لتسجيلك في منصة Barq Agency. يرجى تفعيل بريدك الإلكتروني لإكمال إنشاء الحساب.')
+            ->subject('تفعيل بريدك الإلكتروني - برق')
+            ->line('شكراً لتسجيلك في منصة برق. يرجى تفعيل بريدك الإلكتروني لإكمال إنشاء الحساب.')
             ->action('تفعيل البريد الإلكتروني', $url)
             ->line('بعد التفعيل، سيتم مراجعة طلبك من قبل الإدارة قبل منحك صلاحية الوصول الكامل.');
     }

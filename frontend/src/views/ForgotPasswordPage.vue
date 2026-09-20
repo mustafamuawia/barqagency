@@ -12,7 +12,7 @@
 
         <div class="flex items-center gap-2 shrink-0">
           <div class="text-right min-w-0">
-            <h1 class="text-base sm:text-2xl font-black tracking-wide text-amber-500 leading-tight whitespace-nowrap truncate">Barq Agency</h1>
+            <h1 class="text-base sm:text-2xl font-black tracking-wide text-amber-500 leading-tight whitespace-nowrap truncate">برق</h1>
             <p class="hidden sm:block text-[9px] text-slate-400 font-light -mt-1 whitespace-nowrap">B2B Travel & Tourism Portal</p>
           </div>
           <div class="bg-amber-500 text-slate-900 p-1.5 rounded-lg flex items-center justify-center shrink-0">
@@ -78,7 +78,7 @@
 
     <!-- Footer -->
     <footer class="text-center py-4 text-xs text-slate-400">
-      <p>© 2026 Barq Agency. All rights reserved.</p>
+      <p>© 2026 برق بزنس. جميع الحقوق محفوظة.</p>
     </footer>
 
   </div>

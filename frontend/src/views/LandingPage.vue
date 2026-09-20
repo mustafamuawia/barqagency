@@ -15,7 +15,7 @@
 
         <div class="flex items-center gap-2 shrink-0">
           <div class="text-right min-w-0">
-            <h1 class="text-base sm:text-2xl font-black tracking-wide text-amber-500 leading-tight whitespace-nowrap truncate">Barq Agency</h1>
+            <h1 class="text-base sm:text-2xl font-black tracking-wide text-amber-500 leading-tight whitespace-nowrap truncate">برق</h1>
             <p class="hidden sm:block text-[9px] text-slate-400 font-light -mt-1 whitespace-nowrap">B2B Travel & Tourism Portal</p>
           </div>
           <div class="bg-amber-500 text-slate-900 p-1.5 rounded-lg flex items-center justify-center shrink-0">
@@ -330,7 +330,7 @@
       <!-- FEATURES: bento layout, one highlighted card + three supporting cards -->
       <section id="features" class="max-w-6xl mx-auto px-4 md:px-6 pt-10 pb-6 scroll-mt-20">
         <div class="text-center mb-6">
-          <h3 class="text-lg font-extrabold text-slate-900">لماذا Barq Agency؟</h3>
+          <h3 class="text-lg font-extrabold text-slate-900">لماذا برق؟</h3>
           <p class="text-xs text-slate-400">كل ما تحتاجه وكالتك لإدارة الحجوزات والماليات في مكان واحد</p>
         </div>
 
@@ -378,7 +378,7 @@
       <section id="destinations" class="max-w-6xl mx-auto px-4 md:px-6 py-10 space-y-4 scroll-mt-20">
         <div class="text-center">
           <h3 class="text-lg font-extrabold text-slate-900">وجهات رائجة لعملائك</h3>
-          <p class="text-xs text-slate-400">من أكثر الوجهات طلبًا عبر وكالات Barq Agency</p>
+          <p class="text-xs text-slate-400">من أكثر الوجهات طلبًا عبر وكالات برق</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -410,7 +410,7 @@
             <div class="bg-amber-500 text-slate-900 p-1.5 rounded-lg flex items-center justify-center">
               <BarqLogo class="w-5 h-5" />
             </div>
-            <h3 class="text-xl font-black text-amber-500">Barq Agency</h3>
+            <h3 class="text-xl font-black text-amber-500">برق</h3>
           </div>
           <p class="text-slate-400 text-xs leading-relaxed">
             بوابة B2B لوكلاء السفر لإدارة طلبات الحجز، عروض الأسعار، والمحفظة الرقمية في مكان واحد.
@@ -457,7 +457,7 @@
       </div>
 
       <div class="max-w-6xl mx-auto px-4 md:px-6 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
-        <p>© 2026 Barq Agency. All rights reserved.</p>
+        <p>© 2026 برق بزنس. جميع الحقوق محفوظة.</p>
       </div>
     </footer>
 

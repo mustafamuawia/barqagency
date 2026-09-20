@@ -144,7 +144,7 @@
             <BarqLogo class="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div class="min-w-0">
-            <h1 class="text-base sm:text-2xl font-black tracking-wide text-amber-500 leading-tight whitespace-nowrap truncate">Barq Agency</h1>
+            <h1 class="text-base sm:text-2xl font-black tracking-wide text-amber-500 leading-tight whitespace-nowrap truncate">برق</h1>
             <p class="hidden sm:block text-[10px] text-slate-400 font-light -mt-1 whitespace-nowrap">B2B Travel & Tourism Portal</p>
           </div>
         </div>
@@ -178,7 +178,7 @@
 
     <!-- Footer -->
     <footer class="bg-[#0b132b] text-slate-400 text-xs border-t border-slate-800 py-6 text-center">
-      <p>© 2026 Barq Agency. All rights reserved.</p>
+      <p>© 2026 برق بزنس. جميع الحقوق محفوظة.</p>
     </footer>
   </div>
 </template>

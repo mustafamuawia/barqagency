@@ -19,8 +19,8 @@ class AgencyRejectedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject('طلب تسجيل الوكالة - Barq Agency')
-            ->line('نأسف لإبلاغك بأنه تم رفض طلب تسجيل وكالتك في منصة Barq Agency.');
+            ->subject('طلب تسجيل الوكالة - برق')
+            ->line('نأسف لإبلاغك بأنه تم رفض طلب تسجيل وكالتك في منصة برق.');
 
         if ($this->reason) {
             $mail->line('سبب الرفض: '.$this->reason);

@@ -17,9 +17,9 @@ class AgencyApprovedNotification extends Notification
         $url = rtrim(config('app.frontend_url'), '/').'/login';
 
         return (new MailMessage)
-            ->subject('تمت الموافقة على حساب وكالتك - Barq Agency')
+            ->subject('تمت الموافقة على حساب وكالتك - برق')
             ->greeting('تحية طيبة')
-            ->line('يسعدنا إبلاغك بأنه تمت الموافقة على طلب تسجيل وكالتك في منصة Barq Agency.')
+            ->line('يسعدنا إبلاغك بأنه تمت الموافقة على طلب تسجيل وكالتك في منصة برق.')
             ->action('تسجيل الدخول الآن', $url)
             ->line('يمكنك الآن الوصول الكامل للوحة تحكم الوكيل.');
     }

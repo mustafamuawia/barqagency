@@ -9,7 +9,7 @@
         </div>
         <div class="space-y-1">
           <h2 class="text-xl font-black text-slate-900">تم رفض طلب تسجيل الوكالة</h2>
-          <p class="text-xs text-slate-500">لم تتم الموافقة على حساب وكالتك في منصة Barq Agency</p>
+          <p class="text-xs text-slate-500">لم تتم الموافقة على حساب وكالتك في منصة برق</p>
         </div>
         <div v-if="auth.user?.agency_rejection_reason" class="bg-red-50 border border-red-200 text-red-700 text-xs font-semibold p-4 rounded-2xl text-right">
           <span class="block text-[10px] text-red-400 mb-1">سبب الرفض</span>

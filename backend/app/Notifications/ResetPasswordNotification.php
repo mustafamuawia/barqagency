@@ -21,7 +21,7 @@ class ResetPasswordNotification extends Notification
         $url = rtrim(config('app.frontend_url'), '/').'/reset-password?token='.$this->token.'&email='.urlencode($notifiable->getEmailForPasswordReset());
 
         return (new MailMessage)
-            ->subject('إعادة تعيين كلمة المرور - Barq Agency')
+            ->subject('إعادة تعيين كلمة المرور - برق')
             ->line('لقد تلقيت هذا البريد لأنه تم تقديم طلب لإعادة تعيين كلمة المرور لحسابك.')
             ->action('إعادة تعيين كلمة المرور', $url)
             ->line('تنتهي صلاحية هذا الرابط خلال 60 دقيقة.')
