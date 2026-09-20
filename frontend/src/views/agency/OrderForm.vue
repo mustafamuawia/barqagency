@@ -60,15 +60,11 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5">مطار المغادرة</label>
-            <input v-model="departureAirportQuery" type="text" required
-              placeholder="اكتب رمز أو اسم المطار"
-              class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <AirportAutocomplete v-model="departureAirportQuery" required />
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5">مطار الوصول</label>
-            <input v-model="arrivalAirportQuery" type="text" required
-              placeholder="اكتب رمز أو اسم المطار"
-              class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            <AirportAutocomplete v-model="arrivalAirportQuery" required />
           </div>
         </div>
       </Card>
@@ -152,6 +148,7 @@ import { ArrowRight, PlaneTakeoff, MapPin, User, Send } from 'lucide-vue-next'
 import Card from '@/components/Card.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import Button from '@/components/Button.vue'
+import AirportAutocomplete from '@/components/AirportAutocomplete.vue'
 
 const router = useRouter()
 const loading = ref(false)

@@ -52,13 +52,13 @@
               <div v-if="!flight.id" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label class="block text-[11px] font-semibold text-slate-600 mb-1">مطار المغادرة</label>
-                  <input v-model="flight.departure_airport_name" type="text" required placeholder="اكتب مطار المغادرة"
-                    class="w-full border border-slate-200 rounded-xl px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                  <AirportAutocomplete v-model="flight.departure_airport_name" required dense
+                    placeholder="اكتب مطار المغادرة" />
                 </div>
                 <div>
                   <label class="block text-[11px] font-semibold text-slate-600 mb-1">مطار الوصول</label>
-                  <input v-model="flight.arrival_airport_name" type="text" required placeholder="اكتب مطار الوصول"
-                    class="w-full border border-slate-200 rounded-xl px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                  <AirportAutocomplete v-model="flight.arrival_airport_name" required dense
+                    placeholder="اكتب مطار الوصول" />
                 </div>
               </div>
 
@@ -175,6 +175,7 @@ import Badge from '@/components/Badge.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import Button from '@/components/Button.vue'
 import OrderDetailsPanel from '@/components/OrderDetailsPanel.vue'
+import AirportAutocomplete from '@/components/AirportAutocomplete.vue'
 import { formatMoney } from '@/utils/points'
 
 const props = defineProps({ id: [String, Number] })
