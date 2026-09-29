@@ -6,6 +6,7 @@ use App\DTOs\Order\BookItineraryData;
 use App\DTOs\Order\CreateOrderData;
 use App\DTOs\Order\SubmitQuoteData;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Order\ApproveOrderRequest;
 use App\Http\Requests\Api\V1\Order\StoreOrderFromItineraryRequest;
 use App\Http\Requests\Api\V1\Order\StoreOrderRequest;
 use App\Http\Requests\Api\V1\Order\SubmitQuoteRequest;
@@ -70,9 +71,13 @@ class OrderController extends Controller
         ]);
     }
 
-    public function approveOrder(Request $request, Order $order)
+    public function approveOrder(ApproveOrderRequest $request, Order $order)
     {
-        $order = $this->orderService->approve($request->user(), $order);
+        $order = $this->orderService->approve(
+            $request->user(),
+            $order,
+            $request->validated()['passengers'] ?? []
+        );
 
         return response()->json([
             'message' => 'Order approved',

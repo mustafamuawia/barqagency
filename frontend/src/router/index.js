@@ -62,6 +62,7 @@ const routes = [
       { path: 'orders', name: 'agency.orders', component: () => import('@/views/agency/OrderList.vue') },
       { path: 'orders/new', name: 'agency.orders.new', component: () => import('@/views/agency/OrderForm.vue') },
       { path: 'orders/:id', name: 'agency.orders.show', component: () => import('@/views/agency/OrderDetail.vue'), props: true },
+      { path: 'orders/:id/approve', name: 'agency.orders.approve', component: () => import('@/views/agency/OrderApproval.vue'), props: true },
       { path: 'wallet', name: 'agency.wallet', component: () => import('@/views/agency/WalletDashboard.vue') },
       { path: 'refunds', name: 'agency.refunds', component: () => import('@/views/agency/RefundList.vue') },
       { path: 'refunds/new', name: 'agency.refunds.new', component: () => import('@/views/agency/RefundForm.vue') },

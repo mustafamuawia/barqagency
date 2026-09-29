@@ -35,8 +35,15 @@
           <td class="p-3 text-slate-500">{{ formatDate(order.created_at) }}</td>
           <td class="p-3 text-slate-600">{{ order.total_passengers }}</td>
           <td class="p-3 text-slate-600">{{ formatDate(order.departure_date) }}</td>
-          <td class="p-3 font-mono font-bold text-emerald-600">
-            {{ order.latest_quote ? formatMoney(order.latest_quote.total_price) : '—' }}
+          <td class="p-3 font-mono">
+            <span class="font-bold text-emerald-600">
+              {{ order.latest_quote ? formatMoney(order.latest_quote.total_price) : '—' }}
+            </span>
+            <!-- The wallet ledger is in points, so the money total alone does not tell the
+                 agency what its balance will actually be charged. -->
+            <span v-if="order.latest_quote && rate.money_amount" class="block text-[11px] font-bold text-amber-600 mt-0.5">
+              {{ formatPoints(moneyToPoints(order.latest_quote.total_price)) }}
+            </span>
           </td>
           <td class="p-3">
             <Badge :color="statusColor(order.status?.name)">{{ order.status?.label }}</Badge>
@@ -60,7 +67,10 @@ import LoadingState from '@/components/LoadingState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import DataTable from '@/components/DataTable.vue'
 import Pagination from '@/components/Pagination.vue'
-import { formatMoney } from '@/utils/points'
+import { formatMoney, formatPoints } from '@/utils/points'
+import { usePointRate } from '@/composables/usePointRate'
+
+const { rate, loadRate, moneyToPoints } = usePointRate()
 
 const orders = ref([])
 const meta = ref(null)
@@ -79,7 +89,7 @@ const loadOrders = async (page = 1) => {
   }
 }
 
-onMounted(loadOrders)
+onMounted(() => Promise.all([loadOrders(), loadRate()]))
 
 const statusColor = (status) => {
   const colors = {

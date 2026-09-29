@@ -6,14 +6,16 @@ use App\Http\Requests\Api\V1\Order\StoreOrderRequest;
 
 final readonly class CreateOrderData
 {
+    /**
+     * @param array<int, array{passenger_type_id: int, count: int}> $passengerCounts
+     */
     public function __construct(
         public ?int $agencyId,
         public string $tripType,
         public string $departureDate,
         public ?string $returnDate,
-        public int $totalPassengers,
         public array $segments,
-        public array $passengers,
+        public array $passengerCounts,
     ) {
     }
 
@@ -26,9 +28,17 @@ final readonly class CreateOrderData
             tripType: $validated['trip_type'],
             departureDate: $validated['departure_date'],
             returnDate: $validated['return_date'] ?? null,
-            totalPassengers: $validated['total_passengers'],
             segments: $validated['segments'],
-            passengers: $validated['passengers'],
+            // A type the agency zeroed out carries nobody, so it should not reach the order.
+            passengerCounts: array_values(array_filter(
+                $validated['passenger_counts'],
+                fn (array $entry) => $entry['count'] > 0
+            )),
         );
+    }
+
+    public function totalPassengers(): int
+    {
+        return array_sum(array_column($this->passengerCounts, 'count'));
     }
 }

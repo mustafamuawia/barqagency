@@ -157,6 +157,9 @@ import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
 import Pagination from '@/components/Pagination.vue'
 import { formatPoints, formatMoney } from '@/utils/points'
+import { usePointRate } from '@/composables/usePointRate'
+
+const { rate, loadRate, moneyToPoints } = usePointRate()
 
 const agencies = ref([])
 const wallet = ref(null)
@@ -168,12 +171,6 @@ const message = ref('')
 const messageClass = ref('')
 const pendingDeposits = ref([])
 const pendingDepositsMeta = ref(null)
-const rate = ref({ money_amount: null, point_amount: null })
-
-const moneyToPoints = (money) => {
-  if (!rate.value.money_amount) return 0
-  return (Number(money) || 0) * (rate.value.point_amount / rate.value.money_amount)
-}
 
 const loadPendingDeposits = async (page = 1) => {
   try {
@@ -182,15 +179,6 @@ const loadPendingDeposits = async (page = 1) => {
     pendingDepositsMeta.value = res.data
   } catch (err) {
     console.error('Failed to load pending deposits', err)
-  }
-}
-
-const loadRate = async () => {
-  try {
-    const response = await api.get('/point-settings')
-    rate.value = { money_amount: response.data.money_amount, point_amount: response.data.point_amount }
-  } catch (err) {
-    console.error('Failed to load point settings', err)
   }
 }
 
