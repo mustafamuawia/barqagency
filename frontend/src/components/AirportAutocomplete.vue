@@ -6,7 +6,7 @@
       :required="required"
       :placeholder="placeholder"
       autocomplete="off"
-      @focus="open = true"
+      @focus="open = true; loadAirports()"
       @input="open = true; highlighted = 0"
       @keydown.down.prevent="move(1)"
       @keydown.up.prevent="move(-1)"
@@ -25,12 +25,43 @@
         <span class="font-mono font-bold text-amber-600 shrink-0">{{ airport.iata }}</span>
       </li>
     </ul>
+    <p v-if="open && loading" class="absolute z-20 mt-1 w-full rounded-xl bg-white p-3 text-xs text-slate-500 shadow-lg">
+      جارٍ تحميل قائمة المطارات...
+    </p>
+    <p v-else-if="open && loadError" role="alert" class="absolute z-20 mt-1 w-full rounded-xl bg-white p-3 text-xs text-red-600 shadow-lg">
+      تعذّر تحميل قائمة المطارات. أعد المحاولة.
+    </p>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import airportList from 'airport-codes/airports.json'
+
+let airportListPromise
+
+const fetchAirportList = () => {
+  if (!airportListPromise) {
+    airportListPromise = fetch(`${import.meta.env.BASE_URL}airports.json`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Airport list request failed with status ${response.status}`)
+        }
+        return response.json()
+      })
+      .then((airports) => {
+        if (!Array.isArray(airports)) {
+          throw new Error('Airport list response is not an array')
+        }
+        return airports
+      })
+      .catch((error) => {
+        airportListPromise = undefined
+        throw error
+      })
+  }
+
+  return airportListPromise
+}
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -44,17 +75,32 @@ const rootEl = ref(null)
 const open = ref(false)
 const highlighted = ref(0)
 const query = ref(props.modelValue)
+const airportList = ref([])
+const loading = ref(false)
+const loadError = ref(false)
 
 watch(() => props.modelValue, (value) => { if (value !== query.value) query.value = value })
 watch(query, (value) => emit('update:modelValue', value))
 
-// Only airports with a real IATA code are useful for ticketing/search purposes.
-const airports = airportList.filter((a) => a.iata && a.iata.trim())
+const loadAirports = async () => {
+  if (airportList.value.length || loading.value) return
+
+  loading.value = true
+  loadError.value = false
+  try {
+    airportList.value = await fetchAirportList()
+  } catch (error) {
+    console.error('Failed to load airport list.', error)
+    loadError.value = true
+  } finally {
+    loading.value = false
+  }
+}
 
 const results = computed(() => {
   const term = query.value.trim().toLowerCase()
   if (!term) return []
-  return airports
+  return airportList.value
     .filter((a) =>
       a.iata.toLowerCase().startsWith(term) ||
       a.name.toLowerCase().includes(term) ||

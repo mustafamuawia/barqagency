@@ -1,5 +1,37 @@
-# Vue 3 + Vite
+# Frontend
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## Local development with Vite
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+Start the Laravel API from `backend`:
+
+```sh
+php artisan serve
+```
+
+Then start the frontend from `frontend`:
+
+```sh
+npm install
+npm run dev
+```
+
+The Vite development server proxies `/api` and `/broadcasting/auth` to Laravel
+at `http://127.0.0.1:8000`.
+
+## Run the built frontend through Laravel
+
+From `frontend`, build the app:
+
+```sh
+npm install
+npm run build
+```
+
+The build is written to `backend/public/frontend`. Run `php artisan serve` from
+`backend`; Laravel serves the SPA at `/` and routes client-side URLs to it.
+
+## Development deployment
+
+Pushing to `main` runs the GitHub Actions workflow. It builds the frontend,
+deploys the backend, and uploads the SPA to `backend/public/frontend` on the
+configured development server. Production is not deployed by this workflow.

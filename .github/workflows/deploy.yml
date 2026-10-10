@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install & Build Frontend
         run: |
@@ -24,7 +24,7 @@ jobs:
           npm install
           npm run build
 
-      - name: Deploy to VPS via SSH
+      - name: Deploy backend to development server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -45,6 +45,25 @@ jobs:
             php artisan route:cache
             php artisan view:cache
 
-            # 3. Fix directory permissions
+            mkdir -p /var/www/barqagency/backend/public/frontend
+
+      - name: Deploy frontend build to development server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: backend/public/frontend/*
+          target: /var/www/barqagency/backend/public/frontend
+          strip_components: 3
+
+      - name: Fix deployment permissions
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Make the deployed files readable by the web server
             chown -R www-data:www-data /var/www/barqagency
             chmod -R 775 /var/www/barqagency/backend/storage /var/www/barqagency/backend/bootstrap/cache

@@ -19,12 +19,14 @@ backend/.env.testing
 backend/storage/logs/
 backend/storage/app/
 backend/bootstrap/cache/
+backend/public/frontend/
 backend/.phpunit.result.cache
 backend/composer.lock
 
 # Frontend
 frontend/node_modules/
 frontend/dist/
+frontend/public/airports.json
 frontend/.env.local
 frontend/yarn.lock
 frontend/package-lock.json

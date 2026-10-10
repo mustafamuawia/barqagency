@@ -5,6 +5,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/frontend/',
   plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {
@@ -13,8 +14,22 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/broadcasting/auth': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
   },
   optimizeDeps: {
     include: ['lucide-vue-next'],
+  },
+  build: {
+    outDir: '../backend/public/frontend',
+    emptyOutDir: true,
   },
 })
