@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
 
-    <PageHeader title="طلب حجز رحلة جديدة" subtitle="أدخل تفاصيل الرحلة والركاب يدويًا">
+    <PageHeader title="طلب حجز رحلة جديدة" subtitle="أدخل تفاصيل الرحلة وعدد الركاب للحصول على عرض سعر">
       <template #actions>
         <router-link to="/agency/orders" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
           <ArrowRight class="w-4 h-4" />
@@ -36,11 +36,6 @@
             <input v-model="form.return_date" type="date" required
               class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5">عدد الركاب</label>
-            <input v-model.number="form.total_passengers" type="number" min="1" max="9" required
-              class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-          </div>
         </div>
       </Card>
 
@@ -69,64 +64,28 @@
         </div>
       </Card>
 
-      <Card class="space-y-5">
-        <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
-          <User class="w-4 h-4 text-emerald-500" />
-          بيانات الركاب
-        </h3>
-        <div v-for="(p, i) in passengers" :key="i" class="border border-slate-200 rounded-2xl p-4 space-y-4">
-          <div class="flex items-center gap-2">
-            <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold flex items-center justify-center">{{ i + 1 }}</span>
-            <p class="text-xs font-bold text-slate-700">الراكب {{ i + 1 }}</p>
+      <Card class="space-y-4">
+        <div>
+          <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+            <User class="w-4 h-4 text-emerald-500" />
+            عدد الركاب
+          </h3>
+          <p class="text-[11px] text-slate-500 mt-1.5">
+            حدد عدد الركاب من كل نوع ليتم التسعير على أساسه. تُدخل بيانات الركاب لاحقًا عند الموافقة على عرض السعر.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div v-for="type in passengerTypes" :key="type.id">
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">{{ passengerTypeLabel(type) }}</label>
+            <input v-model.number="counts[type.id]" type="number" min="0" max="9"
+              class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">نوع الراكب</label>
-              <select v-model="p.passenger_type_id" required
-                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400">
-                <option v-for="type in passengerTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">اللقب</label>
-              <select v-model="p.title" required
-                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400">
-                <option value="">اختر اللقب</option>
-                <option v-for="t in titleOptions" :key="t" :value="t">{{ t }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">تاريخ الميلاد</label>
-              <input v-model="p.date_of_birth" type="date" required
-                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">الاسم الأول (كما في الجواز)</label>
-              <input v-model="p.first_name" type="text" required
-                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">اسم العائلة (كما في الجواز)</label>
-              <input v-model="p.last_name" type="text" required
-                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">الجنسية</label>
-              <input v-model="p.nationality" type="text" required
-                placeholder="اكتب الجنسية"
-                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">رقم جواز السفر</label>
-              <input v-model="p.passport_number" type="text" required
-                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">تاريخ انتهاء الجواز</label>
-              <input v-model="p.passport_expiry" type="date" required
-                class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
-            </div>
-          </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-600">إجمالي الركاب</span>
+          <span class="text-sm font-black text-slate-900">{{ totalPassengers }}</span>
         </div>
       </Card>
 
@@ -141,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/lib/api'
 import { ArrowRight, PlaneTakeoff, MapPin, User, Send } from 'lucide-vue-next'
@@ -149,6 +108,7 @@ import Card from '@/components/Card.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import Button from '@/components/Button.vue'
 import AirportAutocomplete from '@/components/AirportAutocomplete.vue'
+import { passengerTypeLabel } from '@/utils/passengers'
 
 const router = useRouter()
 const loading = ref(false)
@@ -156,7 +116,9 @@ const error = ref('')
 
 const cabins = ref([])
 const passengerTypes = ref([])
-const titleOptions = ['السيد', 'السيدة', 'الآنسة']
+
+// Head count per passenger type id — the order is priced against this mix.
+const counts = ref({})
 
 onMounted(async () => {
   try {
@@ -165,36 +127,21 @@ onMounted(async () => {
     ])
     cabins.value = cabinsRes.data
     passengerTypes.value = typesRes.data
-    if (passengerTypes.value.length) {
-      passengers.value.forEach((p) => { p.passenger_type_id = p.passenger_type_id || passengerTypes.value[0].id })
-    }
+    // One adult by default: the first type is ADT, and every booking needs at least one.
+    counts.value = Object.fromEntries(passengerTypes.value.map((type, index) => [type.id, index === 0 ? 1 : 0]))
   } catch (err) {
     error.value = 'فشل تحميل البيانات المرجعية'
   }
 })
 
 const todayStr = () => new Date().toISOString().slice(0, 10)
-const form = ref({ trip_type: 'one_way', departure_date: todayStr(), return_date: '', total_passengers: 1 })
+const form = ref({ trip_type: 'one_way', departure_date: todayStr(), return_date: '' })
 const segment = ref({ departure_airport_name: '', arrival_airport_name: '', cabin_class_id: '', sequence: 1 })
 
-const makePassenger = (sequence) => ({
-  passenger_type_id: passengerTypes.value[0]?.id || '',
-  title: '',
-  first_name: '',
-  last_name: '',
-  date_of_birth: '',
-  nationality: '',
-  passport_number: '',
-  passport_expiry: '',
-  sequence,
-})
-const passengers = ref([makePassenger(1)])
-
-watch(() => form.value.total_passengers, (count) => {
-  const target = Math.max(1, Math.min(9, count || 1))
-  while (passengers.value.length < target) passengers.value.push(makePassenger(passengers.value.length + 1))
-  while (passengers.value.length > target) passengers.value.pop()
-})
+const passengerCounts = computed(() =>
+  passengerTypes.value.map((type) => ({ passenger_type_id: type.id, count: Number(counts.value[type.id]) || 0 }))
+)
+const totalPassengers = computed(() => passengerCounts.value.reduce((sum, entry) => sum + entry.count, 0))
 
 const departureAirportQuery = ref('')
 const arrivalAirportQuery = ref('')
@@ -215,6 +162,14 @@ const handleSubmit = async () => {
     error.value = 'يجب أن يختلف مطار المغادرة عن مطار الوصول'
     return
   }
+  if (totalPassengers.value < 1) {
+    error.value = 'يجب إضافة راكب واحد على الأقل'
+    return
+  }
+  if (totalPassengers.value > 9) {
+    error.value = 'لا يمكن أن يتجاوز إجمالي عدد الركاب 9 ركاب'
+    return
+  }
 
   segment.value.departure_airport_name = departureAirport
   segment.value.arrival_airport_name = arrivalAirport
@@ -222,7 +177,11 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
-    const response = await api.post('/orders', { ...form.value, segments: [segment.value], passengers: passengers.value })
+    const response = await api.post('/orders', {
+      ...form.value,
+      segments: [segment.value],
+      passenger_counts: passengerCounts.value,
+    })
     router.push(`/agency/orders/${response.data.order.id}`)
   } catch (err) {
     error.value = err.response?.data?.message || 'فشل إنشاء الطلب'

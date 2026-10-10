@@ -134,12 +134,13 @@
       <div v-for="(p, index) in order.passengers" :key="p.id"
         class="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3">
         <div class="flex items-center justify-between gap-2">
-          <span class="font-bold text-sm text-slate-900">
-            {{ index + 1 }}. {{ [p.title, p.first_name, p.last_name].filter(Boolean).join(' ') }}
+          <span class="font-bold text-sm" :class="isPassengerIncomplete(p) ? 'text-slate-400' : 'text-slate-900'">
+            {{ index + 1 }}.
+            {{ isPassengerIncomplete(p) ? 'بانتظار إدخال البيانات' : [p.title, p.first_name, p.last_name].filter(Boolean).join(' ') }}
           </span>
-          <Badge color="slate">{{ p.passenger_type?.name || '—' }}</Badge>
+          <Badge color="slate">{{ passengerTypeLabel(p.passenger_type) }}</Badge>
         </div>
-        <div class="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+        <div v-if="!isPassengerIncomplete(p)" class="grid sm:grid-cols-2 gap-x-6 gap-y-2">
           <DetailRow label="تاريخ الميلاد" :value="formatDate(p.date_of_birth)" />
           <DetailRow label="الجنسية" :value="p.nationality" />
           <DetailRow label="رقم الجواز" :value="p.passport_number" mono />
@@ -227,6 +228,7 @@ import Card from '@/components/Card.vue'
 import Badge from '@/components/Badge.vue'
 import DetailRow from '@/components/DetailRow.vue'
 import { formatMoney } from '@/utils/points'
+import { passengerTypeLabel, isPassengerIncomplete } from '@/utils/passengers'
 
 const props = defineProps({
   order: { type: Object, required: true },
@@ -247,10 +249,12 @@ const sortedQuotes = computed(() =>
   [...(props.order.quotes || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 )
 
+// The mix the admin prices against — it is known from the moment the order is requested,
+// well before the traveller details are filled in on approval.
 const passengerMix = computed(() => {
   const counts = new Map()
   for (const p of props.order.passengers || []) {
-    const label = p.passenger_type?.name || 'غير محدد'
+    const label = passengerTypeLabel(p.passenger_type)
     counts.set(label, (counts.get(label) || 0) + 1)
   }
   return [...counts].map(([label, count]) => ({ label, count }))

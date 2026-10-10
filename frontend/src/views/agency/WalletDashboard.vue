@@ -66,20 +66,25 @@
           </div>
 
           <form @submit.prevent="submitDeposit" class="space-y-3">
+            <!-- Above the amount field, not below it: the agency needs to read what it will
+                 actually receive before it commits to a number. -->
+            <p v-if="rate.money_amount" class="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 text-sm font-bold text-emerald-700 leading-relaxed">
+              <template v-if="depositForm.amount">
+                سيُضاف حوالي {{ formatPoints(moneyToPoints(depositForm.amount)) }} عند اعتماد الإيداع
+              </template>
+              <span class="font-semibold text-emerald-600">({{ rate.money_amount }} ج.س = {{ rate.point_amount }} نقطة)</span>
+            </p>
+
             <div class="grid grid-cols-2 gap-2">
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-500">المبلغ (ج.س)</label>
-                <input v-model="depositForm.amount" type="number" step="0.01" min="1" class="w-full bg-slate-50 border rounded-xl px-3 py-1.5 text-xs font-bold font-mono" required>
+                <input v-model="depositForm.amount" type="number" step="0.01" min="1" class="w-full bg-slate-50 border rounded-xl px-3 py-2.5 text-lg font-black font-mono tracking-[0.12em] text-slate-900" required>
               </div>
               <div class="space-y-1">
                 <label class="block text-[10px] font-bold text-slate-500">رقم التحويل / الإسناد</label>
-                <input v-model="depositForm.reference_number" type="text" placeholder="مثال: TXN987251" class="w-full bg-slate-50 border rounded-xl px-3 py-1.5 text-xs" required>
+                <input v-model="depositForm.reference_number" type="text" placeholder="مثال: TXN987251" class="w-full bg-slate-50 border rounded-xl px-3 py-2.5 text-sm font-mono tracking-wide" required>
               </div>
             </div>
-
-            <p v-if="depositForm.amount && rate.money_amount" class="text-[11px] font-semibold text-emerald-600">
-              سيُضاف حوالي {{ formatPoints(moneyToPoints(depositForm.amount)) }} عند اعتماد الإيداع ({{ rate.money_amount }} ج.س = {{ rate.point_amount }} نقطة)
-            </p>
 
             <div class="space-y-1">
               <label class="block text-[10px] font-bold text-slate-500">إيصال التحويل (اختياري)</label>
@@ -192,6 +197,9 @@ import StatTile from '@/components/StatTile.vue'
 import DataTable from '@/components/DataTable.vue'
 import Pagination from '@/components/Pagination.vue'
 import { formatPoints, formatMoney } from '@/utils/points'
+import { usePointRate } from '@/composables/usePointRate'
+
+const { rate, loadRate, moneyToPoints } = usePointRate()
 
 const wallet = ref(null)
 const loading = ref(true)
@@ -203,18 +211,12 @@ const depositHistory = ref([])
 const depositHistoryMeta = ref(null)
 const transactions = ref([])
 const transactionsMeta = ref(null)
-const rate = ref({ money_amount: null, point_amount: null })
 const bankAccounts = ref([])
 
 const depositForm = reactive({
   amount: 250,
   reference_number: '',
 })
-
-const moneyToPoints = (money) => {
-  if (!rate.value.money_amount) return 0
-  return (Number(money) || 0) * (rate.value.point_amount / rate.value.money_amount)
-}
 
 const fetchWallet = async () => {
   try {
@@ -244,15 +246,6 @@ const loadTransactions = async (page = 1) => {
     transactionsMeta.value = response.data
   } catch (err) {
     console.error('Failed to load transactions', err)
-  }
-}
-
-const loadRate = async () => {
-  try {
-    const response = await api.get('/point-settings')
-    rate.value = { money_amount: response.data.money_amount, point_amount: response.data.point_amount }
-  } catch (err) {
-    console.error('Failed to load point settings', err)
   }
 }
 

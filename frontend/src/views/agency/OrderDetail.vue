@@ -23,9 +23,17 @@
       <Card class="space-y-4 lg:sticky lg:top-6">
         <h3 class="font-bold text-sm text-slate-900">الإجراءات</h3>
 
-        <div v-if="latestQuote" class="bg-[#0f172a] rounded-2xl p-4 flex items-center justify-between">
-          <span class="text-xs text-slate-400">إجمالي العرض</span>
-          <span class="font-mono font-black text-emerald-400 text-xl">{{ formatMoney(latestQuote.total_price) }}</span>
+        <div v-if="latestQuote" class="bg-[#0f172a] rounded-2xl p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">إجمالي العرض</span>
+            <span class="font-mono font-black text-emerald-400 text-xl">{{ formatMoney(latestQuote.total_price) }}</span>
+          </div>
+          <!-- The wallet ledger is in points, so the money total alone does not tell the
+               agency what its balance will actually be charged. -->
+          <div v-if="rate.money_amount" class="flex items-center justify-between border-t border-slate-700 pt-2">
+            <span class="text-xs text-slate-400">الخصم من المحفظة</span>
+            <span class="font-mono font-bold text-amber-400 text-sm">{{ formatPoints(moneyToPoints(latestQuote.total_price)) }}</span>
+          </div>
         </div>
 
         <p v-else class="text-xs text-slate-500 bg-slate-50 rounded-xl p-3 border border-slate-200">
@@ -34,17 +42,14 @@
 
         <div v-if="error" class="bg-red-100 text-red-700 text-xs font-semibold p-3 rounded-xl">{{ error }}</div>
 
-        <Button
+        <router-link
           v-if="order.status?.name === 'pricing_sent'"
-          variant="amber"
-          size="md"
-          block
-          @click="approveOrder"
-          :disabled="approving"
+          :to="`/agency/orders/${order.id}/approve`"
+          class="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition"
         >
           <CheckCircle class="w-4 h-4" />
-          {{ approving ? 'جارٍ المعالجة...' : 'موافقة وتأكيد الحجز' }}
-        </Button>
+          إدخال بيانات الركاب والموافقة
+        </router-link>
 
         <Button
           v-if="order.ticket_uploaded_at"
@@ -82,14 +87,16 @@ import LoadingState from '@/components/LoadingState.vue'
 import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
 import OrderDetailsPanel from '@/components/OrderDetailsPanel.vue'
-import { formatMoney } from '@/utils/points'
+import { formatMoney, formatPoints } from '@/utils/points'
+import { usePointRate } from '@/composables/usePointRate'
 import { downloadFile } from '@/lib/download'
+
+const { rate, loadRate, moneyToPoints } = usePointRate()
 
 const props = defineProps({ id: [String, Number] })
 
 const order = ref(null)
 const loading = ref(true)
-const approving = ref(false)
 const downloadingTicket = ref(false)
 const error = ref('')
 
@@ -110,20 +117,7 @@ const loadOrder = async () => {
   }
 }
 
-onMounted(loadOrder)
-
-const approveOrder = async () => {
-  approving.value = true
-  error.value = ''
-  try {
-    await api.put(`/orders/${props.id}/approve`)
-    await loadOrder()
-  } catch (err) {
-    error.value = err.response?.data?.message || 'فشل تأكيد الطلب'
-  } finally {
-    approving.value = false
-  }
-}
+onMounted(() => Promise.all([loadOrder(), loadRate()]))
 
 const downloadTicket = async () => {
   downloadingTicket.value = true

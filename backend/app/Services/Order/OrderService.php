@@ -34,6 +34,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderService
@@ -106,7 +107,7 @@ class OrderService
                 'order_number' => $orderNumber,
                 'agency_id' => $agencyId,
                 'status_id' => $status->id,
-                'total_passengers' => $data->totalPassengers,
+                'total_passengers' => $data->totalPassengers(),
                 'trip_type' => $data->tripType,
                 'departure_date' => $data->departureDate,
                 'return_date' => $data->returnDate,
@@ -117,8 +118,16 @@ class OrderService
                 $order->segments()->create($segment);
             }
 
-            foreach ($data->passengers as $passenger) {
-                $order->passengers()->create($passenger);
+            // One seat per head, typed but unnamed: the admin prices off the mix, and the
+            // agency fills the traveller details in when it approves the quote.
+            $sequence = 1;
+            foreach ($data->passengerCounts as $entry) {
+                for ($i = 0; $i < $entry['count']; $i++) {
+                    $order->passengers()->create([
+                        'passenger_type_id' => $entry['passenger_type_id'],
+                        'sequence' => $sequence++,
+                    ]);
+                }
             }
 
             OrderStatusHistory::create([
@@ -361,7 +370,11 @@ class OrderService
         return $this->referenceResolver->findOrCreateAirlineByName($flight['airline_name'])->id;
     }
 
-    public function approve(User $user, Order $order): Order
+    /**
+     * @param array<int, array<string, mixed>> $passengerDetails traveller details keyed by
+     *        the order's passenger row ids — supplied by the agency at approval time.
+     */
+    public function approve(User $user, Order $order, array $passengerDetails = []): Order
     {
         $this->assertOwnsResource($user, $order->agency_id);
 
@@ -375,7 +388,9 @@ class OrderService
         }
 
         try {
-            return DB::transaction(function () use ($order, $quote, $user) {
+            return DB::transaction(function () use ($order, $quote, $user, $passengerDetails) {
+                $this->savePassengerDetails($order, $passengerDetails);
+
                 // Lock the wallet row to prevent concurrent debits racing past the credit limit
                 $wallet = \App\Models\Wallet::where('agency_id', $order->agency_id)
                     ->lockForUpdate()
@@ -435,6 +450,54 @@ class OrderService
 
             throw $e;
         }
+    }
+
+    /**
+     * Writes the traveller details the agency entered on the approval screen onto the
+     * passenger rows the order was created with, then refuses to go any further while a
+     * passenger is still missing a name or passport — the ticket cannot be issued without it.
+     *
+     * The passenger type stays as requested: it is what the admin priced the order against.
+     *
+     * @param array<int, array<string, mixed>> $passengerDetails
+     */
+    private function savePassengerDetails(Order $order, array $passengerDetails): void
+    {
+        $passengers = $order->passengers()->get()->keyBy('id');
+
+        foreach ($passengerDetails as $details) {
+            $passenger = $passengers->get($details['id']);
+
+            if (!$passenger) {
+                throw ValidationException::withMessages([
+                    'passengers' => 'بيانات الركاب لا تطابق ركاب هذا الطلب.',
+                ]);
+            }
+
+            $passenger->update([
+                'title' => $details['title'] ?? null,
+                'first_name' => $details['first_name'],
+                'last_name' => $details['last_name'],
+                'date_of_birth' => $details['date_of_birth'],
+                'nationality' => $details['nationality'],
+                'passport_number' => $details['passport_number'],
+                'passport_expiry' => $details['passport_expiry'],
+            ]);
+        }
+
+        $incomplete = $passengers->filter(
+            fn ($passenger) => blank($passenger->first_name)
+                || blank($passenger->last_name)
+                || blank($passenger->passport_number)
+        );
+
+        if ($incomplete->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'passengers' => 'يجب إدخال بيانات جميع الركاب قبل تأكيد الحجز.',
+            ]);
+        }
+
+        $order->load('passengers.passengerType');
     }
 
     /**
