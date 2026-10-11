@@ -19,7 +19,7 @@ export function initEcho(token) {
     wssPort: import.meta.env.VITE_REVERB_PORT ? Number(import.meta.env.VITE_REVERB_PORT) : 443,
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME || 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
-    authEndpoint: import.meta.env.VITE_BROADCAST_AUTH_URL || `${API_BASE_URL.replace(/\/api\/?$/, '')}/broadcasting/auth`,
+    authEndpoint: import.meta.env.VITE_BROADCAST_AUTH_URL || `${API_BASE_URL.replace(/\/api\/v1\/?$/, '')}/broadcasting/auth`,
     auth: {
       headers: {
         Authorization: `Bearer ${token}`,

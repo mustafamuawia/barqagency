@@ -137,7 +137,7 @@ npm install
 Edit `src/main.js` or create `.env`:
 
 ```env
-VITE_API_URL=http://127.0.0.1:8000/api
+VITE_API_URL=http://127.0.0.1:8000/api/v1
 ```
 
 ### 3. Start Development Server
@@ -207,7 +207,7 @@ http://127.0.0.1:5173
 
 ### API Base URL
 ```
-http://127.0.0.1:8000/api
+http://127.0.0.1:8000/api/v1
 ```
 
 ---
