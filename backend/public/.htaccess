@@ -5,6 +5,9 @@
 
     RewriteEngine On
 
+    # The document root is an existing directory, so route it to the SPA explicitly.
+    RewriteRule ^$ frontend/index.html [L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
