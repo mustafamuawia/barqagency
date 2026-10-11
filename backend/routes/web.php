@@ -13,4 +13,4 @@ Route::get('/{path}', function () {
     abort_unless(is_file($indexPath), 404);
 
     return response()->file($indexPath);
-})->where('path', '^(?!api(?:/|$)).*');
+})->where('path', '^(?!api(?:/|$)|frontend(?:/|$)).*');
