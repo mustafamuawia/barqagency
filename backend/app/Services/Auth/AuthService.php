@@ -153,7 +153,10 @@ class AuthService
             throw new EmailAlreadyVerifiedException();
         }
 
-        $user->forceFill(['email_verification_token' => Str::random(64)])->save();
+        if (!$user->email_verification_token) {
+            $user->forceFill(['email_verification_token' => Str::random(64)])->save();
+        }
+
         $user->sendAgencyVerificationEmail();
 
         $this->audit->log('auth.resend_verification', $user);
