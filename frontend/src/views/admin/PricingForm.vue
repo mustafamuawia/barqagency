@@ -81,6 +81,15 @@
               </div>
 
               <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">تاريخ ووقت الوصول</label>
+                <input v-model="flight.arrival_datetime" type="datetime-local"
+                  class="w-full border border-slate-200 rounded-xl px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <p v-if="fieldErrors[`flights.${index}.arrival_datetime`]" class="text-[10px] text-red-600 font-semibold mt-1">
+                  {{ fieldErrors[`flights.${index}.arrival_datetime`] }}
+                </p>
+              </div>
+
+              <div>
                 <label class="block text-[11px] font-semibold text-slate-600 mb-1">
                   مبنى المغادرة <span class="text-slate-400 font-normal">(اختياري)</span>
                 </label>
@@ -246,6 +255,7 @@ onMounted(async () => {
       route: `${segment.departure_airport?.code || segment.departure_airport_name || '—'} → ${segment.arrival_airport?.code || segment.arrival_airport_name || '—'}`,
       airline_name: segment.airline?.name || '',
       departure_datetime: toDateTimeInput(segment.departure_datetime),
+      arrival_datetime: toDateTimeInput(segment.arrival_datetime),
       departure_terminal: segment.departure_terminal || '',
     }))
 
@@ -276,6 +286,7 @@ const addFlight = () => {
     arrival_airport_name: '',
     airline_name: '',
     departure_datetime: '',
+    arrival_datetime: '',
     departure_terminal: '',
   })
 }
@@ -318,12 +329,13 @@ const submitQuote = async () => {
   try {
     await api.put(`/orders/${props.id}/quote`, {
       ...form.value,
-      flights: flights.value.map(({ id, airline_name, departure_airport_name, arrival_airport_name, departure_datetime, departure_terminal }) => ({
+      flights: flights.value.map(({ id, airline_name, departure_airport_name, arrival_airport_name, departure_datetime, arrival_datetime, departure_terminal }) => ({
         id,
         airline_name: airline_name.trim(),
         departure_airport_name: departure_airport_name?.trim() || null,
         arrival_airport_name: arrival_airport_name?.trim() || null,
         departure_datetime: departure_datetime || null,
+        arrival_datetime: arrival_datetime || null,
         departure_terminal: departure_terminal.trim(),
       })),
     })

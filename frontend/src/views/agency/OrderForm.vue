@@ -36,6 +36,11 @@
             <input v-model="form.return_date" type="date" required
               class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
           </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">الوزن (كجم) <span class="text-slate-400 font-normal">(اختياري)</span></label>
+            <input v-model.number="form.weight" type="number" min="1" max="500" placeholder="مثال: 23"
+              class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          </div>
         </div>
       </Card>
 
@@ -135,7 +140,7 @@ onMounted(async () => {
 })
 
 const todayStr = () => new Date().toISOString().slice(0, 10)
-const form = ref({ trip_type: 'one_way', departure_date: todayStr(), return_date: '' })
+const form = ref({ trip_type: 'one_way', departure_date: todayStr(), return_date: '', weight: null })
 const segment = ref({ departure_airport_name: '', arrival_airport_name: '', cabin_class_id: '', sequence: 1 })
 
 const passengerCounts = computed(() =>
@@ -177,11 +182,13 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
-    const response = await api.post('/orders', {
+    const payload = {
       ...form.value,
       segments: [segment.value],
       passenger_counts: passengerCounts.value,
-    })
+    }
+    if (!payload.weight) delete payload.weight
+    const response = await api.post('/orders', payload)
     router.push(`/agency/orders/${response.data.order.id}`)
   } catch (err) {
     error.value = err.response?.data?.message || 'فشل إنشاء الطلب'

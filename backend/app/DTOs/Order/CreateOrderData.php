@@ -16,6 +16,7 @@ final readonly class CreateOrderData
         public ?string $returnDate,
         public array $segments,
         public array $passengerCounts,
+        public ?int $weight = null,
     ) {
     }
 
@@ -34,6 +35,7 @@ final readonly class CreateOrderData
                 $validated['passenger_counts'],
                 fn (array $entry) => $entry['count'] > 0
             )),
+            weight: $validated['weight'] ?? null,
         );
     }
 

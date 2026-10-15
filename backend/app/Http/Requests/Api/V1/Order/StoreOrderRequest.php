@@ -18,6 +18,7 @@ class StoreOrderRequest extends FormRequest
             'agency_id' => 'sometimes|exists:travel_agencies,id',
             'trip_type' => 'required|in:one_way,round_trip,multi_city',
             'departure_date' => 'required|date|after_or_equal:today',
+            'weight' => 'nullable|integer|min:1|max:500',
             'return_date' => 'required_if:trip_type,round_trip|nullable|date|after:departure_date',
             // Every segment field needs a rule: as soon as one `segments.*` rule exists,
             // validated() returns only the nested keys that were validated.
@@ -62,6 +63,9 @@ class StoreOrderRequest extends FormRequest
             'departure_date.after_or_equal' => 'يجب ألا يكون تاريخ المغادرة في الماضي.',
             'return_date.required_if' => 'تاريخ العودة مطلوب لرحلات الذهاب والعودة.',
             'return_date.after' => 'يجب أن يكون تاريخ العودة بعد تاريخ المغادرة.',
+            'weight.integer' => 'يجب أن يكون الوزن رقماً صحيحاً.',
+            'weight.min' => 'يجب أن يكون الوزن 1 كجم على الأقل.',
+            'weight.max' => 'لا يمكن أن يتجاوز الوزن 500 كجم.',
             'segments.required' => 'تفاصيل خط السير مطلوبة.',
             'segments.*.cabin_class_id.required' => 'درجة السفر مطلوبة.',
             'segments.*.departure_airport_name.required_without' => 'مطار المغادرة مطلوب.',

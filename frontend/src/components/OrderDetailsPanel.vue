@@ -29,6 +29,10 @@
           <span class="text-[10px] text-slate-400 shrink-0">عدد الركاب</span>
           <span class="text-sm font-bold text-slate-200">{{ order.total_passengers }}</span>
         </div>
+        <div v-if="order.weight" class="flex items-center justify-between gap-2">
+          <span class="text-[10px] text-slate-400 shrink-0">الوزن</span>
+          <span class="text-sm font-bold text-slate-200">{{ order.weight }} كجم</span>
+        </div>
         <div class="flex items-center justify-between gap-2">
           <span class="text-[10px] text-slate-400 shrink-0">السعر التقديري</span>
           <span class="text-sm font-bold font-mono text-slate-200">

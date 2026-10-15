@@ -108,6 +108,7 @@ class OrderService
                 'agency_id' => $agencyId,
                 'status_id' => $status->id,
                 'total_passengers' => $data->totalPassengers(),
+                'weight' => $data->weight,
                 'trip_type' => $data->tripType,
                 'departure_date' => $data->departureDate,
                 'return_date' => $data->returnDate,
@@ -326,6 +327,7 @@ class OrderService
                         'arrival_airport_name' => $flight['arrival_airport_name'],
                         'cabin_class_id' => $defaultCabinClassId,
                         'departure_datetime' => $flight['departure_datetime'] ?? null,
+                        'arrival_datetime' => $flight['arrival_datetime'] ?? null,
                         'departure_terminal' => $flight['departure_terminal'] ?: null,
                         'sequence' => $nextSequence++,
                     ]);
@@ -337,6 +339,10 @@ class OrderService
                 // Only ever set a departure time, never blank an existing one.
                 if (filled($flight['departure_datetime'] ?? null)) {
                     $updates['departure_datetime'] = $flight['departure_datetime'];
+                }
+
+                if (filled($flight['arrival_datetime'] ?? null)) {
+                    $updates['arrival_datetime'] = $flight['arrival_datetime'];
                 }
 
                 if (filled($flight['airline_id'] ?? null) || filled($flight['airline_name'] ?? null)) {

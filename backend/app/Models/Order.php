@@ -13,7 +13,7 @@ class Order extends Model
 {
     use SoftDeletes, HasUuid;
 
-    protected $fillable = ['uuid', 'order_number', 'agency_id', 'status_id', 'estimated_price', 'total_passengers', 'departure_date', 'return_date', 'trip_type', 'ticket_path', 'ticket_uploaded_at', 'metadata', 'created_by', 'updated_by'];
+    protected $fillable = ['uuid', 'order_number', 'agency_id', 'status_id', 'estimated_price', 'total_passengers', 'weight', 'departure_date', 'return_date', 'trip_type', 'ticket_path', 'ticket_uploaded_at', 'metadata', 'created_by', 'updated_by'];
     protected $casts = ['metadata' => 'json', 'departure_date' => 'date', 'return_date' => 'datetime', 'ticket_uploaded_at' => 'datetime'];
     // The stored path is an implementation detail; clients only need to know a ticket
     // exists (ticket_uploaded_at) and fetch it through the dedicated download endpoint.

@@ -35,6 +35,7 @@ class SubmitQuoteRequest extends FormRequest
             'flights.*.departure_airport_name' => 'required_without:flights.*.id|nullable|string|max:255',
             'flights.*.arrival_airport_name' => 'required_without:flights.*.id|nullable|string|max:255',
             'flights.*.departure_datetime' => 'nullable|date',
+            'flights.*.arrival_datetime' => 'nullable|date',
             'flights.*.departure_terminal' => 'nullable|string|max:50',
 
             'return_date' => 'nullable|date',
@@ -46,6 +47,7 @@ class SubmitQuoteRequest extends FormRequest
         return [
             'flights.*.id.exists' => 'إحدى الرحلات لا تنتمي إلى هذا الطلب.',
             'flights.*.departure_datetime.date' => 'وقت المغادرة غير صحيح.',
+            'flights.*.arrival_datetime.date' => 'وقت الوصول غير صحيح.',
             'return_date.date' => 'تاريخ ووقت العودة غير صحيح.',
         ];
     }
