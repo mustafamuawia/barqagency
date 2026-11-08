@@ -39,7 +39,6 @@ return [
         'key' => env('DUFFEL_API_KEY'),
         'base_url' => env('DUFFEL_BASE_URL', 'https://api.duffel.com'),
         'markup_percent' => (float) env('DUFFEL_MARKUP_PERCENT', 0),
-        'usd_to_sar' => (float) env('DUFFEL_USD_TO_SAR', 3.75),
     ],
 
 ];
