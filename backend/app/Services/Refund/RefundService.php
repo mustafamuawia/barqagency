@@ -12,12 +12,17 @@ use App\Helpers\ReferenceNumberGenerator;
 use App\Models\Order;
 use App\Models\Refund;
 use App\Models\RefundStatus;
+use App\Models\TravelAgency;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransactionType;
 use App\Notifications\Admin\NewRefundRequestNotification;
+use App\Notifications\RefundApprovedNotification;
+use App\Notifications\RefundRejectedNotification;
 use App\Services\Audit\AuditLogger;
+use App\Services\FlightSearch\DuffelOrderService;
 use App\Services\Notification\AdminNotifier;
+use App\Services\Notification\AgencyNotifier;
 use App\Services\Pdf\PdfRenderer;
 use App\Services\Settings\PointSettingService;
 use App\Traits\AuthorizesAgencyOwnership;
@@ -35,7 +40,9 @@ class RefundService
         private readonly AuditLogger $audit,
         private readonly PdfRenderer $pdfRenderer,
         private readonly AdminNotifier $adminNotifier,
+        private readonly AgencyNotifier $agencyNotifier,
         private readonly PointSettingService $pointSetting,
+        private readonly DuffelOrderService $duffelOrderService,
     ) {
     }
 
@@ -51,7 +58,6 @@ class RefundService
         return $query->paginate(20);
     }
 
-    /** Total pending count for this user's scope, independent of the current page. */
     public function pendingCountForUser(User $user): int
     {
         $query = Refund::whereHas('status', fn ($q) => $q->where('name', 'pending'));
@@ -93,30 +99,41 @@ class RefundService
             throw new DuplicateRefundRequestException();
         }
 
-        $quote = $order->latestQuote;
-        if (!$quote) {
-            throw new MissingQuoteException('لا يوجد عرض سعر مرتبط بهذا الطلب');
+        $isDuffel = ($order->metadata['source'] ?? null) === 'duffel';
+
+        if ($isDuffel) {
+            // Duffel orders have no admin quote — the original amount is what was debited from the wallet.
+            $originalAmount = (float) ($order->metadata['paid_sar'] ?? 0);
+            $currencyCode   = 'SAR';
+        } else {
+            $quote = $order->latestQuote;
+            if (!$quote) {
+                throw new MissingQuoteException('لا يوجد عرض سعر مرتبط بهذا الطلب');
+            }
+            $originalAmount = (float) $quote->total_price;
+            $currencyCode   = $quote->currency_code ?? 'USD';
         }
 
         $pendingStatus = RefundStatus::where('name', 'pending')->firstOrFail();
 
         $refund = Refund::create([
-            'refund_number' => ReferenceNumberGenerator::make('REF'),
-            'order_id' => $order->id,
-            'agency_id' => $agencyId,
-            'status_id' => $pendingStatus->id,
-            'original_amount' => $quote->total_price,
-            'penalty_amount' => 0,
-            'refund_amount' => $quote->total_price,
-            'currency_code' => $quote->currency_code,
-            'reason' => $data->reason,
-            'requested_by' => $user->id,
-            'requested_at' => now(),
+            'refund_number'  => ReferenceNumberGenerator::make('REF'),
+            'order_id'       => $order->id,
+            'agency_id'      => $agencyId,
+            'status_id'      => $pendingStatus->id,
+            'original_amount' => $originalAmount,
+            'penalty_amount'  => 0,
+            'refund_amount'   => $originalAmount,
+            'currency_code'   => $currencyCode,
+            'reason'          => $data->reason,
+            'requested_by'    => $user->id,
+            'requested_at'    => now(),
         ]);
 
         $this->audit->log('refund.requested', $refund, [], [
-            'refund_number' => $refund->refund_number,
-            'original_amount' => (float) $refund->original_amount,
+            'refund_number'  => $refund->refund_number,
+            'original_amount' => $originalAmount,
+            'source'          => $isDuffel ? 'duffel' : 'manual',
         ]);
 
         $refund->load(['order', 'status', 'agency']);
@@ -131,59 +148,117 @@ class RefundService
             throw new InvalidRefundStatusException();
         }
 
-        $refundAmount = max(0, $refund->original_amount - $data->penaltyAmount);
+        $order    = $refund->order;
+        $isDuffel = ($order->metadata['source'] ?? null) === 'duffel';
 
-        return DB::transaction(function () use ($refund, $data, $refundAmount) {
+        $result = DB::transaction(function () use ($refund, $data, $order, $isDuffel) {
             $creditedStatus = RefundStatus::where('name', 'credited')->firstOrFail();
 
-            $refund->update([
-                'status_id' => $creditedStatus->id,
-                'penalty_amount' => $data->penaltyAmount,
-                'refund_amount' => $refundAmount,
-                'admin_remarks' => $data->adminRemarks,
-                'decided_by' => auth()->id(),
-                'decided_at' => now(),
-            ]);
+            if ($isDuffel) {
+                // Cancel with the airline via Duffel — the actual refund amount comes from their policy.
+                // If force=true the admin bypasses the API (e.g. airline rejected cancel) and sets the amount manually.
+                if ($data->force) {
+                    $refundedSar = $data->manualRefundAmount ?? 0.0;
+                } else {
+                    $refundedSar = $this->duffelOrderService->cancelForRefund($order);
+                }
+                $penaltyAmt  = max(0, (float) $refund->original_amount - $refundedSar);
 
-            $order = $refund->order;
-            $order->transitionTo('cancelled', "تم استرداد الحجز رقم {$refund->refund_number}");
+                $refund->update([
+                    'status_id'      => $creditedStatus->id,
+                    'penalty_amount' => $penaltyAmt,
+                    'refund_amount'  => $refundedSar,
+                    'admin_remarks'  => $data->adminRemarks,
+                    'decided_by'     => auth()->id(),
+                    'decided_at'     => now(),
+                ]);
 
-            // Lock the wallet row to prevent a concurrent order-approval debit or
-            // another refund credit from racing against this balance read/write.
-            $wallet = Wallet::where('agency_id', $refund->agency_id)->lockForUpdate()->firstOrFail();
-            $balanceBefore = (float) $wallet->balance;
-            // refund_amount is money — the wallet ledger is in points, so it's converted here,
-            // same as wallet top-ups/deposits and order booking debits.
-            $pointsCredit = $this->pointSetting->moneyToPoints((float) $refundAmount);
-            $newBalance = $wallet->balance + $pointsCredit;
+                $order->transitionTo('cancelled', "تم استرداد الحجز المباشر رقم {$refund->refund_number}");
 
-            $creditType = WalletTransactionType::firstOrCreate(['name' => 'refund_credit'], ['label' => 'Refund Credit']);
-            $wallet->transactions()->create([
-                'uuid' => Str::uuid(),
-                'transaction_type_id' => $creditType->id,
-                'amount' => $pointsCredit,
-                'money_equivalent' => (float) $refundAmount,
-                'balance_after' => $newBalance,
-                'reference_type' => Refund::class,
-                'reference_id' => $refund->id,
-                'description' => "Refund credit for order {$order->order_number}",
-                'created_by' => auth()->id(),
-                'created_at' => now(),
-            ]);
-            $wallet->update(['balance' => $newBalance]);
+                $wallet       = Wallet::where('agency_id', $refund->agency_id)->lockForUpdate()->firstOrFail();
+                $balanceBefore = (float) $wallet->balance;
+                $newBalance   = $balanceBefore + $refundedSar;
 
-            $this->audit->log('refund.approved', $refund, [
-                'status' => 'pending',
-                'balance_before' => $balanceBefore,
-            ], [
-                'status' => 'credited',
-                'refund_amount' => (float) $refundAmount,
-                'penalty_amount' => (float) $data->penaltyAmount,
-                'balance_after' => (float) $newBalance,
-            ]);
+                $creditType = WalletTransactionType::firstOrCreate(['name' => 'refund_credit'], ['label' => 'Refund Credit']);
+                $wallet->transactions()->create([
+                    'uuid'                => Str::uuid(),
+                    'transaction_type_id' => $creditType->id,
+                    'amount'              => $refundedSar,
+                    'money_equivalent'    => $refundedSar,
+                    'balance_after'       => $newBalance,
+                    'reference_type'      => Refund::class,
+                    'reference_id'        => $refund->id,
+                    'description'         => "Refund credit for direct booking {$order->order_number}",
+                    'created_by'          => auth()->id(),
+                    'created_at'          => now(),
+                ]);
+                $wallet->update(['balance' => $newBalance]);
 
-            return $refund->fresh(['status', 'order']);
+                $this->audit->log('refund.approved', $refund, [
+                    'status'         => 'pending',
+                    'balance_before' => $balanceBefore,
+                ], [
+                    'status'         => 'credited',
+                    'refund_amount'  => $refundedSar,
+                    'penalty_amount' => $penaltyAmt,
+                    'balance_after'  => (float) $newBalance,
+                    'source'         => 'duffel',
+                ]);
+            } else {
+                $refundAmount = max(0, $refund->original_amount - $data->penaltyAmount);
+
+                $refund->update([
+                    'status_id'      => $creditedStatus->id,
+                    'penalty_amount' => $data->penaltyAmount,
+                    'refund_amount'  => $refundAmount,
+                    'admin_remarks'  => $data->adminRemarks,
+                    'decided_by'     => auth()->id(),
+                    'decided_at'     => now(),
+                ]);
+
+                $order->transitionTo('cancelled', "تم استرداد الحجز رقم {$refund->refund_number}");
+
+                $wallet       = Wallet::where('agency_id', $refund->agency_id)->lockForUpdate()->firstOrFail();
+                $balanceBefore = (float) $wallet->balance;
+                $pointsCredit = $this->pointSetting->moneyToPoints((float) $refundAmount);
+                $newBalance   = $wallet->balance + $pointsCredit;
+
+                $creditType = WalletTransactionType::firstOrCreate(['name' => 'refund_credit'], ['label' => 'Refund Credit']);
+                $wallet->transactions()->create([
+                    'uuid'                => Str::uuid(),
+                    'transaction_type_id' => $creditType->id,
+                    'amount'              => $pointsCredit,
+                    'money_equivalent'    => (float) $refundAmount,
+                    'balance_after'       => $newBalance,
+                    'reference_type'      => Refund::class,
+                    'reference_id'        => $refund->id,
+                    'description'         => "Refund credit for order {$order->order_number}",
+                    'created_by'          => auth()->id(),
+                    'created_at'          => now(),
+                ]);
+                $wallet->update(['balance' => $newBalance]);
+
+                $this->audit->log('refund.approved', $refund, [
+                    'status'         => 'pending',
+                    'balance_before' => $balanceBefore,
+                ], [
+                    'status'         => 'credited',
+                    'refund_amount'  => (float) $refundAmount,
+                    'penalty_amount' => (float) $data->penaltyAmount,
+                    'balance_after'  => (float) $newBalance,
+                ]);
+            }
+
+            return $refund->fresh(['status', 'order', 'agency']);
         });
+
+        // Notify agency outside the transaction to avoid holding the lock during I/O.
+        $agency = TravelAgency::find($refund->agency_id);
+        if ($agency) {
+            $this->agencyNotifier->send($agency, new RefundApprovedNotification($result));
+        }
+
+        return $result;
     }
 
     public function creditNotePdf(User $user, Refund $refund)
@@ -207,13 +282,19 @@ class RefundService
 
         $rejectedStatus = RefundStatus::where('name', 'rejected')->firstOrFail();
         $refund->update([
-            'status_id' => $rejectedStatus->id,
-            'admin_remarks' => $adminRemarks,
-            'decided_by' => auth()->id(),
-            'decided_at' => now(),
+            'status_id'      => $rejectedStatus->id,
+            'admin_remarks'  => $adminRemarks,
+            'decided_by'     => auth()->id(),
+            'decided_at'     => now(),
         ]);
 
         $this->audit->log('refund.rejected', $refund, ['status' => 'pending'], ['status' => 'rejected', 'admin_remarks' => $adminRemarks]);
+
+        $refund->load(['order', 'agency']);
+        $agency = TravelAgency::find($refund->agency_id);
+        if ($agency) {
+            $this->agencyNotifier->send($agency, new RefundRejectedNotification($refund));
+        }
 
         return $refund->fresh(['status']);
     }

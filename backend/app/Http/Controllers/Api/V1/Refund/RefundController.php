@@ -47,7 +47,13 @@ class RefundController extends Controller
 
     public function approve(ApproveRefundRequest $request, Refund $refund)
     {
-        $refund = $this->refundService->approve($refund, DecideRefundData::fromRequest($request));
+        try {
+            $refund = $this->refundService->approve($refund, DecideRefundData::fromRequest($request));
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'message' => 'لا تسمح شركة الطيران بإلغاء هذا الحجز عبر API.',
+            ], 422);
+        }
 
         return response()->json([
             'message' => 'تمت الموافقة على الاسترداد وإضافة المبلغ للمحفظة',

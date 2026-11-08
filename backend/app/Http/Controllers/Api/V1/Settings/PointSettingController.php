@@ -20,9 +20,19 @@ class PointSettingController extends Controller
 
     public function update(UpdatePointSettingRequest $request)
     {
+        $commissionAmount = $request->has('agency_commission_amount')
+            ? (float) $request->validated('agency_commission_amount')
+            : null;
+
+        $usdToSarRate = $request->has('usd_to_sar_rate')
+            ? (float) $request->validated('usd_to_sar_rate')
+            : null;
+
         $setting = $this->pointSettingService->update(
             (float) $request->validated('money_amount'),
-            (float) $request->validated('point_amount')
+            (float) $request->validated('point_amount'),
+            $commissionAmount,
+            $usdToSarRate
         );
 
         return response()->json([

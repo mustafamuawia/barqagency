@@ -5,7 +5,7 @@ const routes = [
   {
     path: '/',
     component: () => import('@/views/LandingPage.vue'),
-    meta: { public: true },
+    meta: { requireRole: 'agency' },
   },
   {
     path: '/login',

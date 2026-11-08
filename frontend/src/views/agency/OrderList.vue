@@ -31,7 +31,16 @@
           class="hover:bg-slate-50 transition cursor-pointer"
           @click="$router.push(`/agency/orders/${order.id}`)"
         >
-          <td class="p-3 font-mono font-bold text-slate-700">{{ order.order_number }}</td>
+          <td class="p-3">
+            <span class="font-mono font-bold text-slate-700">{{ order.order_number }}</span>
+            <span
+              v-if="order.metadata?.source === 'duffel'"
+              class="mt-1 flex items-center gap-1 w-fit bg-sky-100 text-sky-700 text-[10px] font-bold px-1.5 py-0.5 rounded"
+            >
+              <Plane class="w-3 h-3" />
+              حجز مباشر
+            </span>
+          </td>
           <td class="p-3 text-slate-500">{{ formatDate(order.created_at) }}</td>
           <td class="p-3 text-slate-600">{{ order.total_passengers }}</td>
           <td class="p-3 text-slate-600">{{ formatDate(order.departure_date) }}</td>
@@ -59,7 +68,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/lib/api'
-import { PlusCircle } from 'lucide-vue-next'
+import { PlusCircle, Plane } from 'lucide-vue-next'
 import Card from '@/components/Card.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import Badge from '@/components/Badge.vue'

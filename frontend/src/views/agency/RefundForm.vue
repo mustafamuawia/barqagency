@@ -1,7 +1,6 @@
 <template>
   <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
 
-    <!-- Section Header -->
     <PageHeader title="طلب استرداد جديد" subtitle="اختر الحجز المؤكد وأدخل سبب الاسترداد">
       <template #actions>
         <router-link to="/agency/refunds" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
@@ -25,14 +24,20 @@
           class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400">
           <option value="">-- اختر رقم الطلب --</option>
           <option v-for="order in eligibleOrders" :key="order.id" :value="order.id">
-            {{ order.order_number }} — {{ formatMoney(order.latest_quote?.total_price) }}
+            {{ order.order_number }} — {{ orderDisplayAmount(order) }}
           </option>
         </select>
       </div>
 
-      <div v-if="selectedOrder" class="bg-[#0f172a] rounded-2xl p-5 flex items-center justify-between">
-        <span class="text-[10px] text-slate-400">المبلغ الأصلي المدفوع</span>
-        <span class="text-2xl font-black text-emerald-400 font-mono">{{ formatMoney(selectedOrder.latest_quote?.total_price) }}</span>
+      <div v-if="selectedOrder" class="bg-[#0f172a] rounded-2xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] text-slate-400">{{ isDuffelOrder(selectedOrder) ? 'المبلغ المدفوع من المحفظة' : 'المبلغ الأصلي المدفوع' }}</span>
+          <span class="text-2xl font-black text-emerald-400 font-mono">{{ orderDisplayAmount(selectedOrder) }}</span>
+        </div>
+        <div v-if="isDuffelOrder(selectedOrder)" class="flex items-center gap-2 border-t border-slate-800 pt-3">
+          <Plane class="w-3.5 h-3.5 text-sky-400 shrink-0" />
+          <span class="text-[11px] text-sky-300">سيتم إلغاء الحجز عبر شركة الطيران — المبلغ المسترد وفق سياسة الإلغاء</span>
+        </div>
       </div>
 
       <div>
@@ -42,7 +47,7 @@
       </div>
 
       <p class="text-[10px] text-slate-400 bg-slate-50 border border-slate-200 rounded-xl p-3">
-        سيتم مراجعة الطلب من قبل الإدارة، وقد يتم خصم رسوم جزاء أو إلغاء حسب سياسة شركة الطيران قبل إضافة صافي المبلغ إلى محفظتك.
+        سيتم مراجعة الطلب من قبل الإدارة. عند الموافقة سيُضاف صافي المبلغ المسترد إلى محفظتك تلقائياً وستصلك إشعار بالقرار.
       </p>
 
       <div v-if="error" class="bg-red-100 text-red-700 text-xs font-semibold p-3 rounded-xl">{{ error }}</div>
@@ -60,13 +65,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/lib/api'
-import { ArrowRight, Send } from 'lucide-vue-next'
+import { ArrowRight, Send, Plane } from 'lucide-vue-next'
 import PageHeader from '@/components/PageHeader.vue'
 import LoadingState from '@/components/LoadingState.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
-import { formatMoney } from '@/utils/points'
+import { formatMoney, formatPoints } from '@/utils/points'
 
 const router = useRouter()
 const route = useRoute()
@@ -81,6 +86,13 @@ const form = ref({ order_id: route.query.order_id || '', reason: '' })
 
 const ELIGIBLE_STATUSES = ['approved', 'confirmed']
 const ACTIVE_REFUND_STATUSES = ['pending', 'approved', 'credited']
+
+const isDuffelOrder = (order) => order.metadata?.source === 'duffel'
+
+const orderDisplayAmount = (order) =>
+  isDuffelOrder(order)
+    ? formatPoints(order.metadata?.paid_sar)
+    : formatMoney(order.latest_quote?.total_price)
 
 const eligibleOrders = computed(() => {
   const ordersWithActiveRefund = new Set(
@@ -107,7 +119,7 @@ const handleSubmit = async () => {
   submitting.value = true
   error.value = ''
   try {
-    const response = await api.post('/refunds', form.value)
+    await api.post('/refunds', form.value)
     router.push('/agency/refunds')
   } catch (err) {
     error.value = err.response?.data?.message || 'فشل إرسال طلب الاسترداد'
@@ -115,5 +127,4 @@ const handleSubmit = async () => {
     submitting.value = false
   }
 }
-
 </script>

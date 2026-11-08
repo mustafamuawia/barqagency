@@ -14,8 +14,10 @@ class ApproveRefundRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'penalty_amount' => 'nullable|numeric|min:0',
-            'admin_remarks' => 'nullable|string|max:1000',
+            'penalty_amount'       => 'nullable|numeric|min:0',
+            'admin_remarks'        => 'nullable|string|max:1000',
+            'force'                => 'nullable|boolean',
+            'manual_refund_amount' => 'nullable|numeric|min:0',
         ];
     }
 }

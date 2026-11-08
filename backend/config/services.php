@@ -35,11 +35,11 @@ return [
         ],
     ],
 
-    'ignav' => [
-        'key' => env('IGNAV_API_KEY'),
-        'base_url' => env('IGNAV_BASE_URL', 'https://ignav.com/api'),
-        'market' => env('IGNAV_MARKET', 'US'),
-        'markup_percent' => (float) env('IGNAV_MARKUP_PERCENT', 0),
+    'duffel' => [
+        'key' => env('DUFFEL_API_KEY'),
+        'base_url' => env('DUFFEL_BASE_URL', 'https://api.duffel.com'),
+        'markup_percent' => (float) env('DUFFEL_MARKUP_PERCENT', 0),
+        'usd_to_sar' => (float) env('DUFFEL_USD_TO_SAR', 3.75),
     ],
 
 ];

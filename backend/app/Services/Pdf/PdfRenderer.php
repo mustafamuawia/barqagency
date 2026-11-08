@@ -11,11 +11,14 @@ class PdfRenderer
     {
     }
 
-    public function render(string $view, array $data, string $filename): Response
+    public function render(string $view, array $data, string $filename, string $paper = 'a4'): Response
     {
         $html = view($view, $data)->render();
         $html = $this->arabicShaper->shapeHtml($html);
 
-        return Pdf::loadHTML($html)->download($filename);
+        return Pdf::loadHTML($html)
+            ->setPaper($paper)
+            ->setOption('isRemoteEnabled', false)
+            ->download($filename);
     }
 }

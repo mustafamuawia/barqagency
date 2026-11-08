@@ -14,7 +14,7 @@ import { computed } from 'vue'
 
 const props = defineProps({
   type: { type: String, default: 'button' },
-  variant: { type: String, default: 'dark' }, // dark | amber | secondary | danger-outline
+  variant: { type: String, default: 'dark' }, // dark | amber | secondary | danger-outline | sky
   size: { type: String, default: 'sm' }, // sm | md | lg
   block: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
@@ -25,6 +25,7 @@ const VARIANT_MAP = {
   amber: 'bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm',
   secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-700',
   'danger-outline': 'bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-300',
+  sky: 'bg-sky-500 hover:bg-sky-600 text-white shadow-sm',
 }
 
 const SIZE_MAP = {

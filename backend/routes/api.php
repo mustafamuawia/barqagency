@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Agency\AgencyController;
 use App\Http\Controllers\Api\V1\Auth\LoginController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
+use App\Http\Controllers\Api\V1\FlightSearch\DuffelBookingController;
 use App\Http\Controllers\Api\V1\FlightSearch\FlightSearchController;
 use App\Http\Controllers\Api\V1\Order\OrderController;
 use App\Http\Controllers\Api\V1\ReferenceData\ReferenceDataController;
@@ -24,9 +25,9 @@ Route::prefix('v1')->group(function () {
     Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->middleware('throttle:5,1');
     Route::post('/verify-email', [\App\Http\Controllers\Api\V1\Auth\EmailVerificationController::class, 'verify'])->middleware('throttle:10,1');
-    Route::get('/flight-search', [FlightSearchController::class, 'search'])->middleware('throttle:30,1');
 
     Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
+        Route::get('/flight-search', [FlightSearchController::class, 'search'])->middleware('throttle:30,1');
         Route::post('/logout', [LoginController::class, 'logout']);
         Route::get('/user', [LoginController::class, 'user']);
         Route::post('/resend-verification', [\App\Http\Controllers\Api\V1\Auth\EmailVerificationController::class, 'resend'])->middleware('throttle:5,1');
@@ -35,6 +36,13 @@ Route::prefix('v1')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\Api\V1\Auth\ProfileController::class, 'show']);
         Route::put('/profile', [\App\Http\Controllers\Api\V1\Auth\ProfileController::class, 'update']);
         Route::put('/profile/password', [\App\Http\Controllers\Api\V1\Auth\ProfileController::class, 'updatePassword']);
+
+        // Duffel booking & cancellation
+        Route::post('/duffel/book', [DuffelBookingController::class, 'book'])->middleware(['role:agency', 'agency.active']);
+        Route::get('/duffel/booking-attempts/{uuid}', [DuffelBookingController::class, 'bookingAttemptStatus'])->middleware(['role:agency', 'agency.active']);
+        Route::get('/duffel/orders/{order}/ticket', [DuffelBookingController::class, 'ticket']);
+        Route::get('/duffel/orders/{order}/ticket/pdf', [DuffelBookingController::class, 'ticketPdf']);
+        Route::post('/duffel/orders/{order}/cancel', [DuffelBookingController::class, 'cancel'])->middleware(['role:agency', 'agency.active']);
 
         // Orders
         Route::get('/orders', [OrderController::class, 'index']);

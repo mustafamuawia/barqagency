@@ -17,7 +17,7 @@ class ReferenceResolver
         'first' => ['code' => 'F', 'name' => 'First'],
     ];
 
-    public function __construct(private readonly IgnavClient $ignav) {}
+    public function __construct(private readonly DuffelClient $duffel) {}
 
     public function findOrCreateAirline(string $code, ?string $name = null): Airline
     {
@@ -63,16 +63,16 @@ class ReferenceResolver
             return $airport;
         }
 
-        $matches = $this->ignav->airports($code, 1);
-        $match = collect($matches)->first(fn ($a) => strtoupper($a['code'] ?? '') === $code);
+        $match = $this->duffel->getAirport($code);
 
         if ($match) {
+            $countryCode = strtoupper($match['iata_country_code'] ?? 'XX');
             $country = Country::firstOrCreate(
-                ['code' => strtoupper($match['country'])],
-                ['name' => $match['country']]
+                ['code' => $countryCode],
+                ['name' => $countryCode]
             );
             $city = City::firstOrCreate(
-                ['name' => $match['city'] ?? $code, 'country_id' => $country->id]
+                ['name' => $match['city_name'] ?? $code, 'country_id' => $country->id]
             );
 
             return Airport::create([
@@ -94,9 +94,9 @@ class ReferenceResolver
         ]);
     }
 
-    public function mapCabinClass(string $ignavCabin): CabinClass
+    public function mapCabinClass(string $cabin): CabinClass
     {
-        $meta = self::CABIN_MAP[$ignavCabin] ?? self::CABIN_MAP['economy'];
+        $meta = self::CABIN_MAP[$cabin] ?? self::CABIN_MAP['economy'];
 
         return CabinClass::firstOrCreate(['code' => $meta['code']], ['name' => $meta['name']]);
     }

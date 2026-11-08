@@ -58,6 +58,7 @@
         border-radius: 10px;
         padding: 14px 16px;
         margin-bottom: 14px;
+        page-break-inside: avoid;
     }
 
     .card-title {

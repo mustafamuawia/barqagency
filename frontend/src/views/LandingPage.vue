@@ -5,11 +5,12 @@
       <!-- Top Header -->
       <header class="bg-[#0f172a] text-white py-2.5 sm:py-3 px-3 sm:px-4 md:px-8 flex items-center justify-between gap-2 shadow-md">
         <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <router-link to="/login" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 sm:px-5 py-2 rounded-xl text-[11px] sm:text-sm transition shadow-sm whitespace-nowrap">
-            تسجيل الدخول
-          </router-link>
-          <router-link to="/register" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-2.5 sm:px-4 py-2 rounded-xl text-[11px] sm:text-sm border border-slate-700 transition whitespace-nowrap">
-            إنشاء حساب وكالة
+          <span class="hidden sm:block text-slate-300 text-xs font-semibold truncate max-w-[160px]">{{ authStore.user?.name }}</span>
+          <button @click="logout" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-2.5 sm:px-4 py-2 rounded-xl text-[11px] sm:text-sm border border-slate-700 transition whitespace-nowrap">
+            تسجيل الخروج
+          </button>
+          <router-link to="/agency" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 sm:px-5 py-2 rounded-xl text-[11px] sm:text-sm transition shadow-sm whitespace-nowrap">
+            لوحة التحكم
           </router-link>
         </div>
 
@@ -62,8 +63,8 @@
               أنشئ طلب حجز، استلم عرض سعر مخصصًا من فريقنا، ووافق عليه بدفع فوري من محفظتك الرقمية أو ضمن حد ائتمانك.
             </p>
             <div class="flex items-center justify-center md:justify-start gap-3 pt-2">
-              <router-link to="/register" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-7 py-3 rounded-2xl text-sm transition shadow-md">
-                ابدأ الآن كوكالة سفر
+              <router-link to="/agency/orders/new" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-7 py-3 rounded-2xl text-sm transition shadow-md">
+                طلب حجز جديد
               </router-link>
               <a href="#search" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-7 py-3 rounded-2xl text-sm transition">
                 ابحث عن رحلة
@@ -255,6 +256,13 @@
             </div>
 
             <div v-else class="space-y-2">
+              <div
+                v-if="expiredBanner"
+                class="flex items-center justify-between gap-2 bg-amber-50 border border-amber-300 rounded-xl px-4 py-2.5 text-xs"
+              >
+                <span class="text-amber-800 font-semibold">⚠️ انتهت صلاحية العرض السابق — تم تحديث النتائج بأحدث الأسعار المتاحة</span>
+                <button @click="expiredBanner = false" class="text-amber-500 hover:text-amber-700 font-bold shrink-0">✕</button>
+              </div>
               <p class="text-[11px] font-bold text-slate-500">{{ results.length }} عرض متاح</p>
               <div
                 v-for="r in results"
@@ -274,13 +282,20 @@
                 </div>
                 <div class="flex items-center gap-3">
                   <div class="text-left">
-                    <p class="text-lg font-black text-emerald-600 font-mono">{{ formatPrice(r.total_price, r.currency) }}</p>
-                    <p class="text-[10px] text-slate-400">{{ r.passengers }} مسافر × {{ formatPrice(r.unit_price, r.currency) }}</p>
+                    <p class="text-lg font-black text-emerald-600 font-mono">{{ formatPoints(r.total_price_sar) }}</p>
+                    <template v-if="rate.agency_commission_amount > 0">
+                      <p class="text-[10px] text-sky-600 font-bold font-mono">+ {{ formatPoints(rate.agency_commission_amount) }} عمولة</p>
+                      <p class="text-[11px] font-black text-slate-700 font-mono">= {{ formatPoints(r.total_price_sar + rate.agency_commission_amount) }} للعميل</p>
+                    </template>
+                    <p class="text-[10px] text-slate-400">{{ r.passengers }} مسافر × {{ formatPoints(r.unit_price_sar) }}</p>
+                    <p class="text-[10px] text-slate-400 font-mono">{{ r.duffel_total_amount }} {{ r.duffel_total_currency }}</p>
                   </div>
-                  <!-- Hidden for now: booking isn't wired up for public search results yet -->
-                  <!-- <router-link to="/register" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap transition">
+                  <button
+                    @click="openBooking(r)"
+                    class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap transition"
+                  >
                     احجز الآن
-                  </router-link> -->
+                  </button>
                 </div>
               </div>
             </div>
@@ -461,18 +476,339 @@
       </div>
     </footer>
 
+  <!-- Booking Modal -->
+  <Teleport to="body">
+    <div
+      v-if="bookingModal.open"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+      @click.self="closeBooking"
+    >
+      <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 sticky top-0 bg-white rounded-t-2xl">
+          <div>
+            <p class="font-black text-slate-900 text-sm">{{ bookingModal.result?.airline }}</p>
+            <p class="text-[11px] text-slate-500 font-mono mt-0.5">
+              {{ bookingModal.result?.origin }} → {{ bookingModal.result?.destination }} ·
+              {{ formatPoints(bookingModal.result?.total_price_sar) }}
+            </p>
+          </div>
+          <button @click="closeBooking" class="text-slate-400 hover:text-slate-700 text-xl font-bold leading-none">✕</button>
+        </div>
+
+        <form @submit.prevent="submitBooking" class="px-5 py-4 space-y-5">
+          <!-- One section per passenger -->
+          <div
+            v-for="(p, i) in bookingForm.passengers"
+            :key="i"
+            class="space-y-3 border border-slate-200 rounded-xl p-4"
+          >
+            <p class="font-bold text-xs text-slate-700">مسافر {{ i + 1 }}</p>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] font-semibold text-slate-500 block mb-1">اللقب</label>
+                <select v-model="p.title" required class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400">
+                  <option value="mr">Mr</option>
+                  <option value="ms">Ms</option>
+                  <option value="mrs">Mrs</option>
+                  <option value="miss">Miss</option>
+                  <option value="dr">Dr</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[10px] font-semibold text-slate-500 block mb-1">الجنس</label>
+                <select v-model="p.gender" required class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400">
+                  <option value="m">ذكر</option>
+                  <option value="f">أنثى</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] font-semibold text-slate-500 block mb-1">الاسم الأول</label>
+                <input v-model="p.given_name" required placeholder="John" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+              <div>
+                <label class="text-[10px] font-semibold text-slate-500 block mb-1">الاسم الأخير</label>
+                <input v-model="p.family_name" required placeholder="Doe" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+            </div>
+
+            <div>
+              <label class="text-[10px] font-semibold text-slate-500 block mb-1">تاريخ الميلاد</label>
+              <input v-model="p.born_on" type="date" required class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] font-semibold text-slate-500 block mb-1">البريد الإلكتروني</label>
+                <input v-model="p.email" type="email" required placeholder="john@example.com" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+              <div>
+                <label class="text-[10px] font-semibold text-slate-500 block mb-1">رقم الهاتف</label>
+                <input v-model="p.phone_number" required placeholder="+966500000000" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+            </div>
+
+            <!-- Passport — required or optional depending on the selected offer -->
+            <div v-if="bookingModal.passportRequired" class="space-y-2 border border-amber-200 bg-amber-50/50 rounded-xl p-3">
+              <p class="text-[10px] font-bold text-amber-700 flex items-center gap-1">
+                <span>وثيقة الهوية</span>
+                <span class="text-red-500">*</span>
+                <span class="font-normal text-amber-600">(مطلوبة لهذه الرحلة)</span>
+              </p>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="col-span-2">
+                  <label class="text-[10px] font-semibold text-slate-500 block mb-1">رقم الجواز <span class="text-red-500">*</span></label>
+                  <input v-model="p.passport_number" placeholder="AB1234567" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                </div>
+                <div>
+                  <label class="text-[10px] font-semibold text-slate-500 block mb-1">تاريخ الانتهاء <span class="text-red-500">*</span></label>
+                  <input v-model="p.passport_expiry" type="date" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                </div>
+                <div>
+                  <label class="text-[10px] font-semibold text-slate-500 block mb-1">دولة الإصدار <span class="text-red-500">*</span></label>
+                  <input v-model="p.issuing_country_code" placeholder="SA" maxlength="2" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                </div>
+              </div>
+            </div>
+
+            <details v-else class="text-xs">
+              <summary class="text-[10px] font-semibold text-slate-500 cursor-pointer select-none">جواز السفر (اختياري)</summary>
+              <div class="mt-2 grid grid-cols-2 gap-2">
+                <div class="col-span-2">
+                  <label class="text-[10px] font-semibold text-slate-500 block mb-1">رقم الجواز</label>
+                  <input v-model="p.passport_number" placeholder="AB1234567" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                </div>
+                <div>
+                  <label class="text-[10px] font-semibold text-slate-500 block mb-1">تاريخ الانتهاء</label>
+                  <input v-model="p.passport_expiry" type="date" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                </div>
+                <div>
+                  <label class="text-[10px] font-semibold text-slate-500 block mb-1">دولة الإصدار (2 حرف)</label>
+                  <input v-model="p.issuing_country_code" placeholder="SA" maxlength="2" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <!-- Price breakdown -->
+          <div class="bg-slate-950 rounded-2xl p-4 space-y-2 text-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-400">سعر التذكرة</span>
+              <span class="font-mono font-bold text-white">{{ formatPoints(bookingModal.result?.total_price_sar) }}</span>
+            </div>
+            <template v-if="rate.agency_commission_amount > 0">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-sky-400">عمولة الوكالة</span>
+                <span class="font-mono font-bold text-sky-400">+ {{ formatPoints(commissionAmount) }}</span>
+              </div>
+              <div class="border-t border-slate-700 pt-2 flex items-center justify-between">
+                <span class="text-xs text-slate-300 font-semibold">السعر المقترح للعميل</span>
+                <span class="font-mono font-black text-emerald-400 text-base">{{ formatPoints(clientTotalAmount) }}</span>
+              </div>
+              <p class="text-[10px] text-slate-500 text-center">المبلغ المخصوم من محفظتك: {{ formatPoints(clientTotalAmount) }} فقط</p>
+            </template>
+            <template v-else>
+              <div class="border-t border-slate-700 pt-2 flex items-center justify-between">
+                <span class="text-xs text-slate-400">يُخصم من المحفظة</span>
+                <span class="font-mono font-black text-emerald-400 text-base">{{ formatPoints(bookingModal.result?.total_price_sar) }}</span>
+              </div>
+            </template>
+          </div>
+
+          <!-- Error -->
+          <p v-if="bookingModal.error" class="text-xs text-red-600 font-semibold text-center">{{ bookingModal.error }}</p>
+
+          <!-- Submit -->
+          <button
+            type="submit"
+            :disabled="bookingModal.loading"
+            class="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-extrabold py-3 rounded-xl text-sm transition"
+          >
+            {{ bookingModal.loading ? 'جارٍ الحجز…' : `تأكيد الحجز · ${formatPoints(clientTotalAmount)}` }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div
+      v-if="bookingSuccess.open"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+    >
+      <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center space-y-4">
+        <div class="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+          <CheckCircle2 class="w-8 h-8 text-emerald-500" />
+        </div>
+        <h3 class="font-black text-slate-900 text-base">تم الحجز بنجاح!</h3>
+        <p class="text-xs text-slate-500">رقم الحجز: <span class="font-bold text-slate-800 font-mono tracking-wider">{{ bookingSuccess.reference }}</span></p>
+        <p class="text-xs text-slate-500">رقم الطلب: <span class="font-bold text-slate-800">{{ bookingSuccess.orderNumber }}</span></p>
+        <div class="bg-slate-900 rounded-xl p-3 space-y-1.5 text-right">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-slate-400">الخصم من المحفظة</span>
+            <span class="font-mono font-bold text-white text-xs">{{ formatPoints(bookingSuccess.deductedSar) }}</span>
+          </div>
+          <div v-if="commissionAmount > 0" class="flex items-center justify-between">
+            <span class="text-[10px] text-sky-400">عمولة الوكالة</span>
+            <span class="font-mono font-bold text-sky-400 text-xs">+ {{ formatPoints(commissionAmount) }}</span>
+          </div>
+          <div v-if="commissionAmount > 0" class="flex items-center justify-between border-t border-slate-700 pt-1.5">
+            <span class="text-[10px] font-bold text-amber-400">السعر المقترح للعميل</span>
+            <span class="font-mono font-black text-amber-400 text-xs">{{ formatPoints(bookingSuccess.deductedSar + commissionAmount) }}</span>
+          </div>
+        </div>
+        <!-- Show e-ticket numbers if available in the booking response -->
+        <div v-if="bookingSuccess.documents.length" class="bg-slate-50 rounded-xl p-3 space-y-1 text-right">
+          <p class="text-[10px] font-bold text-slate-500 mb-1">أرقام التذاكر الإلكترونية</p>
+          <div v-for="doc in bookingSuccess.documents" :key="doc.unique_identifier" class="text-xs font-mono text-slate-800">
+            {{ doc.unique_identifier }}
+          </div>
+        </div>
+        <div class="flex flex-col gap-2 w-full">
+          <button
+            @click="openTicket()"
+            :disabled="ticketModal.loading"
+            class="w-full bg-slate-900 hover:bg-slate-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2"
+          >
+            <template v-if="ticketModal.loading">
+              <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+              جارٍ تحميل التذكرة…
+            </template>
+            <template v-else>
+              <FileText class="w-4 h-4" /> تحميل التذكرة PDF
+            </template>
+          </button>
+          <button @click="bookingSuccess.open = false" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition">
+            حسناً
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Ticket Modal -->
+    <div
+      v-if="ticketModal.open"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+      @click.self="ticketModal.open = false"
+    >
+      <div class="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 sticky top-0 bg-white rounded-t-2xl">
+          <p class="font-black text-slate-900 text-sm">التذكرة الإلكترونية</p>
+          <button @click="ticketModal.open = false" class="text-slate-400 hover:text-slate-700 text-xl font-bold leading-none">✕</button>
+        </div>
+
+        <div class="px-5 py-4">
+          <div v-if="ticketModal.loading" class="text-center text-sm text-slate-500 py-8">جارٍ جلب بيانات التذكرة…</div>
+          <div v-else-if="ticketModal.error" class="text-center text-sm text-red-600 py-8">{{ ticketModal.error }}</div>
+          <div v-else-if="ticketModal.data" class="space-y-4">
+
+            <!-- Header info -->
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+              <div class="text-right">
+                <p class="text-[10px] text-amber-700 font-semibold">رقم الحجز (PNR)</p>
+                <p class="font-black text-xl text-amber-900 font-mono tracking-widest">{{ ticketModal.data.booking_reference }}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-[10px] text-slate-500 font-semibold">رقم الطلب</p>
+                <p class="font-bold text-xs text-slate-800">{{ ticketModal.data.order_number }}</p>
+              </div>
+            </div>
+
+            <!-- Passengers -->
+            <div v-if="ticketModal.data.passengers?.length" class="space-y-1">
+              <p class="text-[10px] font-bold text-slate-500">المسافرون</p>
+              <div v-for="(p, i) in ticketModal.data.passengers" :key="i" class="flex items-center gap-2 text-xs text-slate-800">
+                <span class="w-5 h-5 bg-slate-100 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">{{ i + 1 }}</span>
+                {{ p.name }}
+              </div>
+            </div>
+
+            <!-- E-Tickets -->
+            <div v-if="ticketModal.data.documents?.length" class="space-y-2">
+              <p class="text-[10px] font-bold text-slate-500">أرقام التذاكر الإلكترونية</p>
+              <div
+                v-for="doc in ticketModal.data.documents"
+                :key="doc.ticket_number"
+                class="bg-slate-50 border border-slate-200 rounded-xl p-3"
+              >
+                <p class="text-xs font-bold text-slate-800 font-mono">{{ doc.ticket_number }}</p>
+                <p class="text-[10px] text-slate-500">{{ doc.passenger_names?.join('، ') }}</p>
+              </div>
+            </div>
+
+            <!-- Segments / Itinerary -->
+            <div v-if="ticketModal.data.segments?.length" class="space-y-2">
+              <p class="text-[10px] font-bold text-slate-500">تفاصيل الرحلة</p>
+              <div
+                v-for="(seg, i) in ticketModal.data.segments"
+                :key="i"
+                class="border border-slate-200 rounded-xl p-3 space-y-1"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-semibold text-slate-500">{{ seg.airline }}</span>
+                  <span class="text-[10px] font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">{{ seg.flight_number }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <span>{{ seg.origin }}</span>
+                  <span class="text-slate-400">→</span>
+                  <span>{{ seg.destination }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1 text-[10px] text-slate-500">
+                  <div>
+                    <span class="font-semibold">المغادرة: </span>
+                    <span class="font-mono">{{ seg.departing_at ? seg.departing_at.replace('T', ' ').slice(0, 16) : '—' }}</span>
+                  </div>
+                  <div>
+                    <span class="font-semibold">الوصول: </span>
+                    <span class="font-mono">{{ seg.arriving_at ? seg.arriving_at.replace('T', ' ').slice(0, 16) : '—' }}</span>
+                  </div>
+                </div>
+                <p v-if="seg.aircraft" class="text-[10px] text-slate-400">{{ seg.aircraft }}</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </Teleport>
+
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import api from '@/lib/api'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import api, { API_BASE_URL } from '@/lib/api'
+import { useAuthStore } from '@/stores/auth'
+import { usePointRate } from '@/composables/usePointRate'
 import BarqLogo from '@/components/BarqLogo.vue'
 import {
   PlaneTakeoff, ClipboardList, Wallet, RotateCcw, ShieldCheck,
   Workflow, Sparkles, MapPin, FileText, BadgeDollarSign, CheckCircle2,
   Mail, Clock, Search, ArrowLeftRight,
 } from 'lucide-vue-next'
+
+const router = useRouter()
+const authStore = useAuthStore()
+const { rate, loadRate } = usePointRate()
+
+onMounted(loadRate)
+
+const commissionAmount = computed(() => rate.value.agency_commission_amount ?? 0)
+
+const clientTotalAmount = computed(() => {
+  const price = bookingModal.value.result?.total_price_sar ?? 0
+  return price + commissionAmount.value
+})
+
+const logout = async () => {
+  await authStore.logout()
+  router.push('/login')
+}
 
 const destinations = [
   { name: 'جدة', code: 'JED', gradient: 'bg-gradient-to-br from-amber-500 to-amber-700' },
@@ -508,6 +844,7 @@ const onSearch = async () => {
   const destination = searchForm.value.to.trim().toUpperCase()
 
   searchError.value = ''
+  expiredBanner.value = false
   if (origin.length !== 3 || destination.length !== 3) {
     searched.value = true
     results.value = []
@@ -552,8 +889,149 @@ const onSearch = async () => {
   }
 }
 
+// --- Booking ---
+const bookingModal = ref({ open: false, result: null, loading: false, error: '', passportRequired: false, supportedDocTypes: ['passport'] })
+const bookingForm = ref({ passengers: [] })
+const bookingSuccess = ref({ open: false, reference: '', orderNumber: '', deductedSar: 0, duffelOrderId: '', documents: [], localOrderId: null })
+const ticketModal = ref({ open: false, loading: false, error: '', data: null })
+const expiredBanner = ref(false)
+
+const blankPassenger = () => ({
+  title: 'mr', gender: 'm', given_name: '', family_name: '',
+  born_on: '', email: '', phone_number: '',
+  passport_number: '', passport_expiry: '', issuing_country_code: '',
+})
+
+const openBooking = (result) => {
+  bookingModal.value = {
+    open: true,
+    result,
+    loading: false,
+    error: '',
+    passportRequired: result.passport_required ?? false,
+    supportedDocTypes: result.supported_doc_types ?? ['passport'],
+  }
+  bookingForm.value.passengers = Array.from(
+    { length: result.passengers },
+    () => blankPassenger()
+  )
+}
+
+const closeBooking = () => {
+  bookingModal.value.open = false
+}
+
+const submitBooking = async () => {
+  const r = bookingModal.value.result
+  bookingModal.value.error = ''
+
+  // If the offer requires identity documents, validate before hitting the API.
+  if (bookingModal.value.passportRequired) {
+    for (let i = 0; i < bookingForm.value.passengers.length; i++) {
+      const p = bookingForm.value.passengers[i]
+      if (!p.passport_number || !p.passport_expiry || !p.issuing_country_code) {
+        bookingModal.value.error = `يرجى إدخال بيانات جواز السفر الكاملة للمسافر ${i + 1} — هذه الرحلة تتطلب وثيقة هوية`
+        return
+      }
+    }
+  }
+
+  // If the user provided partial passport data (only some fields), reject it.
+  for (let i = 0; i < bookingForm.value.passengers.length; i++) {
+    const p = bookingForm.value.passengers[i]
+    const filled = [p.passport_number, p.passport_expiry, p.issuing_country_code].filter(Boolean).length
+    if (filled > 0 && filled < 3) {
+      bookingModal.value.error = `بيانات جواز السفر غير مكتملة للمسافر ${i + 1} — أدخل رقم الجواز وتاريخ الانتهاء ودولة الإصدار معاً أو اتركها فارغة`
+      return
+    }
+  }
+
+  bookingModal.value.loading = true
+
+  const passengers = bookingForm.value.passengers.map((p, i) => {
+    const duffelP = r.duffel_passengers?.[i] ?? {}
+    const payload = {
+      duffel_passenger_id: duffelP.id,
+      duffel_type: duffelP.type ?? 'adult',
+      title: p.title,
+      given_name: p.given_name,
+      family_name: p.family_name,
+      born_on: p.born_on,
+      email: p.email,
+      phone_number: p.phone_number,
+      gender: p.gender,
+    }
+    if (p.passport_number && p.passport_expiry && p.issuing_country_code) {
+      payload.identity_documents = [{
+        type: 'passport',
+        unique_identifier: p.passport_number,
+        expires_on: p.passport_expiry,
+        issuing_country_code: p.issuing_country_code.toUpperCase(),
+      }]
+    }
+    return payload
+  })
+
+  try {
+    const res = await api.post('/duffel/book', {
+      offer_id: r.offer_id,
+      duffel_total_amount: r.duffel_total_amount,
+      duffel_total_currency: r.duffel_total_currency,
+      total_price_sar: r.total_price_sar,
+      passengers,
+    })
+    bookingModal.value.open = false
+    bookingSuccess.value = {
+      open: true,
+      reference: res.data.booking?.booking_reference ?? '—',
+      orderNumber: res.data.booking?.order_number ?? '—',
+      deductedSar: res.data.booking?.deducted_sar ?? 0,
+      duffelOrderId: res.data.booking?.duffel_order_id ?? '',
+      documents: res.data.booking?.documents ?? [],
+      localOrderId: res.data.booking?.local_order_id ?? null,
+    }
+  } catch (err) {
+    if (err.response?.status === 409 && err.response?.data?.expired) {
+      bookingModal.value.error = 'انتهت صلاحية هذا العرض. جارٍ تحديث نتائج البحث…'
+      expiredBanner.value = true
+      await onSearch()
+      bookingModal.value.open = false
+    } else {
+      bookingModal.value.error = err.response?.data?.message ?? 'فشل الحجز، يرجى المحاولة مرة أخرى'
+    }
+  } finally {
+    bookingModal.value.loading = false
+  }
+}
+
+const openTicket = async () => {
+  ticketModal.value = { open: false, loading: true, error: '', data: null }
+  try {
+    const orderId = bookingSuccess.value.localOrderId
+    const token = authStore.token
+    const url = `${API_BASE_URL}/duffel/orders/${orderId}/ticket/pdf`
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/pdf' } })
+    if (!res.ok) throw new Error('فشل تحميل التذكرة')
+    const blob = await res.blob()
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `ticket-${bookingSuccess.value.reference ?? orderId}.pdf`
+    a.click()
+    URL.revokeObjectURL(a.href)
+    bookingSuccess.value.open = false
+  } catch (err) {
+    ticketModal.value.error = err.message ?? 'تعذر تحميل التذكرة'
+    ticketModal.value.open = true
+  } finally {
+    ticketModal.value.loading = false
+  }
+}
+
 const formatPrice = (value, currency = 'USD') =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(value || 0)
+
+const formatPoints = (value) =>
+  new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0) + ' نقطة'
 
 const formatDuration = (minutes) => {
   const h = Math.floor(minutes / 60)

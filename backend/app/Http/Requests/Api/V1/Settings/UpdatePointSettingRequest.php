@@ -14,8 +14,10 @@ class UpdatePointSettingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'money_amount' => 'required|numeric|min:0.01',
-            'point_amount' => 'required|numeric|min:0.01',
+            'money_amount'             => 'required|numeric|min:0.01',
+            'point_amount'             => 'required|numeric|min:0.01',
+            'agency_commission_amount' => 'sometimes|numeric|min:0',
+            'usd_to_sar_rate'          => 'sometimes|numeric|min:0.01',
         ];
     }
 }

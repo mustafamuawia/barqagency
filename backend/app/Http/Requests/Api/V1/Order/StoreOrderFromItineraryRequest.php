@@ -18,7 +18,7 @@ class StoreOrderFromItineraryRequest extends FormRequest
             'return_date' => 'nullable|date|after:departure_date',
 
             'itinerary' => 'required|array',
-            'itinerary.ignav_id' => 'nullable|string',
+            'itinerary.offer_id' => 'nullable|string',
             'itinerary.cabin_class' => 'required|string',
             'itinerary.currency' => 'required|string|size:3',
             'itinerary.total_price' => 'required|numeric|min:0',

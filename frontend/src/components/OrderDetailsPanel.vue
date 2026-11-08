@@ -33,7 +33,7 @@
           <span class="text-[10px] text-slate-400 shrink-0">الوزن</span>
           <span class="text-sm font-bold text-slate-200">{{ order.weight }} كجم</span>
         </div>
-        <div class="flex items-center justify-between gap-2">
+        <div v-if="order.metadata?.source !== 'duffel'" class="flex items-center justify-between gap-2">
           <span class="text-[10px] text-slate-400 shrink-0">السعر التقديري</span>
           <span class="text-sm font-bold font-mono text-slate-200">
             {{ order.estimated_price ? formatMoney(order.estimated_price) : '—' }}
@@ -55,8 +55,15 @@
           class="bg-slate-100 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full">
           {{ mix.label }}: {{ mix.count }}
         </span>
-        <span class="bg-slate-100 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full">
-          المصدر: {{ order.metadata?.source === 'ignav' ? 'بحث آلي (Ignav)' : 'إدخال يدوي' }}
+        <span
+          :class="order.metadata?.source === 'duffel'
+            ? 'bg-sky-100 text-sky-700 text-[11px] font-bold px-3 py-1.5 rounded-full'
+            : 'bg-slate-100 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-full'"
+        >
+          المصدر:
+          <span v-if="order.metadata?.source === 'ignav'">بحث آلي (Ignav)</span>
+          <span v-else-if="order.metadata?.source === 'duffel'">حجز مباشر</span>
+          <span v-else>إدخال يدوي</span>
         </span>
         <span v-if="order.metadata?.ignav_id"
           class="bg-slate-100 text-slate-500 text-[11px] font-mono px-3 py-1.5 rounded-full">
@@ -153,8 +160,8 @@
       </div>
     </Card>
 
-    <!-- Quotes -->
-    <Card v-if="order.quotes?.length" class="space-y-3">
+    <!-- Quotes (hidden for Duffel orders — they have no admin quote) -->
+    <Card v-if="order.quotes?.length && order.metadata?.source !== 'duffel'" class="space-y-3">
       <h3 class="font-bold text-sm text-slate-900">عروض الأسعار ({{ order.quotes.length }})</h3>
 
       <div v-for="(quote, index) in sortedQuotes" :key="quote.id"

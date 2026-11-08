@@ -173,7 +173,7 @@ class OrderService
                 'departure_date' => $data->departureDate,
                 'return_date' => $data->returnDate,
                 'itinerary_details' => $itinerary,
-                'metadata' => ['source' => 'ignav', 'ignav_id' => $itinerary['ignav_id'] ?? null],
+                'metadata' => ['source' => 'duffel', 'offer_id' => $itinerary['offer_id'] ?? null],
                 'created_by' => auth()->id(),
             ]);
 
@@ -220,7 +220,7 @@ class OrderService
                 'order_id' => $order->id,
                 'from_status_id' => null,
                 'to_status_id' => $pendingStatus->id,
-                'reason' => 'تم إنشاء الطلب من نتيجة بحث Ignav',
+                'reason' => 'تم إنشاء الطلب من نتيجة بحث Duffel',
                 'created_by' => auth()->id(),
                 'created_at' => now(),
             ]);
@@ -233,16 +233,16 @@ class OrderService
                 'fees' => 0,
                 'total_price' => $itinerary['total_price'],
                 'currency_code' => $itinerary['currency'],
-                'remarks' => 'تم التسعير تلقائيًا بناءً على نتيجة بحث Ignav',
+                'remarks' => 'تم التسعير تلقائيًا بناءً على نتيجة بحث Duffel',
                 'created_by' => auth()->id(),
             ]);
 
-            $order->transitionTo('pricing_sent', 'تم التسعير التلقائي عبر خدمة Ignav');
+            $order->transitionTo('pricing_sent', 'تم التسعير التلقائي عبر خدمة Duffel');
 
             $this->audit->log('order.quote_submitted', $order, [], [
                 'total_price' => $itinerary['total_price'],
                 'order_number' => $order->order_number,
-                'source' => 'ignav',
+                'source' => 'duffel',
             ]);
 
             $order->load(['agency', 'status', 'segments', 'passengers']);
