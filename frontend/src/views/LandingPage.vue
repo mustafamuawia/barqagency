@@ -187,6 +187,7 @@
                 <input
                   v-model="searchForm.departDate"
                   type="date"
+                  :min="todayStr()"
                   class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 >
               </div>
@@ -196,6 +197,7 @@
                 <input
                   v-model="searchForm.returnDate"
                   type="date"
+                  :min="searchForm.departDate"
                   class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 >
               </div>
@@ -780,7 +782,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api, { API_BASE_URL } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
@@ -826,6 +828,12 @@ const searchForm = ref({
   departDate: todayStr(),
   returnDate: todayStr(),
   cabinPassengers: '1-economy',
+})
+
+watch(() => searchForm.value.departDate, (newDepart) => {
+  if (newDepart && searchForm.value.returnDate < newDepart) {
+    searchForm.value.returnDate = newDepart
+  }
 })
 
 const swapAirports = () => {
