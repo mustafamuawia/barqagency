@@ -68,6 +68,7 @@ const props = defineProps({
   placeholder: { type: String, default: 'اكتب رمز أو اسم المطار' },
   required: { type: Boolean, default: false },
   dense: { type: Boolean, default: false },
+  customClass: { type: String, default: '' },
 })
 const emit = defineEmits(['update:modelValue', 'select'])
 
@@ -109,9 +110,12 @@ const results = computed(() => {
     .slice(0, 8)
 })
 
-const inputClass = computed(() => props.dense
-  ? 'w-full border border-slate-200 rounded-xl px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400'
-  : 'w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400')
+const inputClass = computed(() => {
+  if (props.customClass) return props.customClass
+  return props.dense
+    ? 'w-full border border-slate-200 rounded-xl px-3 py-2 text-[11px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400'
+    : 'w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400'
+})
 
 const move = (delta) => {
   if (!results.value.length) return

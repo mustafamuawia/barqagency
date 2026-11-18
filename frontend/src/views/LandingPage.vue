@@ -9,7 +9,7 @@
           <button @click="logout" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-2.5 sm:px-4 py-2 rounded-xl text-[11px] sm:text-sm border border-slate-700 transition whitespace-nowrap">
             تسجيل الخروج
           </button>
-          <router-link to="/agency" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 sm:px-5 py-2 rounded-xl text-[11px] sm:text-sm transition shadow-sm whitespace-nowrap">
+          <router-link to="/agency/dashboard" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 sm:px-5 py-2 rounded-xl text-[11px] sm:text-sm transition shadow-sm whitespace-nowrap">
             لوحة التحكم
           </router-link>
         </div>
@@ -150,12 +150,12 @@
             <div class="relative bg-slate-50 border border-slate-200/80 rounded-2xl px-4 md:px-6 py-4 flex items-center gap-3">
               <div class="flex-1 min-w-0">
                 <label class="block text-[10px] font-bold text-slate-400 mb-0.5">من</label>
-                <input
+                <AirportAutocomplete
                   v-model="searchForm.from"
-                  type="text"
-                  placeholder="CAI"
-                  class="w-full bg-transparent text-base md:text-xl font-black text-slate-900 uppercase tracking-wide focus:outline-none placeholder:text-slate-300"
-                >
+                  placeholder="اكتب اسم أو رمز المطار"
+                  custom-class="w-full bg-transparent text-sm md:text-base font-black text-slate-900 tracking-wide focus:outline-none placeholder:text-slate-300"
+                  @select="a => searchForm.fromCode = a.iata"
+                />
               </div>
 
               <button type="button" @click="swapAirports" class="shrink-0 w-9 h-9 rounded-full bg-white border border-slate-200 text-amber-600 flex items-center justify-center shadow-sm hover:bg-amber-50 transition">
@@ -164,12 +164,12 @@
 
               <div class="flex-1 min-w-0 text-left">
                 <label class="block text-[10px] font-bold text-slate-400 mb-0.5">إلى</label>
-                <input
+                <AirportAutocomplete
                   v-model="searchForm.to"
-                  type="text"
-                  placeholder="JED"
-                  class="w-full bg-transparent text-base md:text-xl font-black text-slate-900 uppercase tracking-wide text-left focus:outline-none placeholder:text-slate-300"
-                >
+                  placeholder="اكتب اسم أو رمز المطار"
+                  custom-class="w-full bg-transparent text-sm md:text-base font-black text-slate-900 tracking-wide text-left focus:outline-none placeholder:text-slate-300"
+                  @select="a => searchForm.toCode = a.iata"
+                />
               </div>
             </div>
 
@@ -529,12 +529,12 @@
 
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="text-[10px] font-semibold text-slate-500 block mb-1">الاسم الأول</label>
-                <input v-model="p.given_name" required placeholder="John" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <label class="text-[10px] font-semibold text-slate-500 block mb-1">الاسم الأول <span class="text-slate-400">(بالإنجليزية)</span></label>
+                <input v-model="p.given_name" required placeholder="Mustafa" pattern="[a-zA-Z\s\-'.]+" dir="ltr" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
               <div>
-                <label class="text-[10px] font-semibold text-slate-500 block mb-1">الاسم الأخير</label>
-                <input v-model="p.family_name" required placeholder="Doe" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                <label class="text-[10px] font-semibold text-slate-500 block mb-1">الاسم الأخير <span class="text-slate-400">(بالإنجليزية)</span></label>
+                <input v-model="p.family_name" required placeholder="Zaroug" pattern="[a-zA-Z\s\-'.]+" dir="ltr" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
               </div>
             </div>
 
@@ -572,7 +572,7 @@
                 </div>
                 <div>
                   <label class="text-[10px] font-semibold text-slate-500 block mb-1">دولة الإصدار <span class="text-red-500">*</span></label>
-                  <input v-model="p.issuing_country_code" placeholder="SA" maxlength="2" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                  <CountrySelect v-model="p.issuing_country_code" :required="true" input-class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
                 </div>
               </div>
             </div>
@@ -589,8 +589,8 @@
                   <input v-model="p.passport_expiry" type="date" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
                 </div>
                 <div>
-                  <label class="text-[10px] font-semibold text-slate-500 block mb-1">دولة الإصدار (2 حرف)</label>
-                  <input v-model="p.issuing_country_code" placeholder="SA" maxlength="2" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                  <label class="text-[10px] font-semibold text-slate-500 block mb-1">دولة الإصدار</label>
+                  <CountrySelect v-model="p.issuing_country_code" input-class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400" />
                 </div>
               </div>
             </details>
@@ -788,6 +788,8 @@ import api, { API_BASE_URL } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 import { usePointRate } from '@/composables/usePointRate'
 import BarqLogo from '@/components/BarqLogo.vue'
+import AirportAutocomplete from '@/components/AirportAutocomplete.vue'
+import CountrySelect from '@/components/CountrySelect.vue'
 import {
   PlaneTakeoff, ClipboardList, Wallet, RotateCcw, ShieldCheck,
   Workflow, Sparkles, MapPin, FileText, BadgeDollarSign, CheckCircle2,
@@ -798,7 +800,9 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { rate, loadRate } = usePointRate()
 
-onMounted(loadRate)
+onMounted(() => {
+  loadRate()
+})
 
 const commissionAmount = computed(() => rate.value.agency_commission_amount ?? 0)
 
@@ -825,6 +829,8 @@ const tripType = ref('roundtrip')
 const searchForm = ref({
   from: '',
   to: '',
+  fromCode: '',
+  toCode: '',
   departDate: todayStr(),
   returnDate: todayStr(),
   cabinPassengers: '1-economy',
@@ -837,9 +843,12 @@ watch(() => searchForm.value.departDate, (newDepart) => {
 })
 
 const swapAirports = () => {
-  const from = searchForm.value.from
+  const tmpDisplay = searchForm.value.from
+  const tmpCode = searchForm.value.fromCode
   searchForm.value.from = searchForm.value.to
-  searchForm.value.to = from
+  searchForm.value.fromCode = searchForm.value.toCode
+  searchForm.value.to = tmpDisplay
+  searchForm.value.toCode = tmpCode
 }
 
 const searching = ref(false)
@@ -848,15 +857,15 @@ const searchError = ref('')
 const results = ref([])
 
 const onSearch = async () => {
-  const origin = searchForm.value.from.trim().toUpperCase()
-  const destination = searchForm.value.to.trim().toUpperCase()
+  const origin = searchForm.value.fromCode || searchForm.value.from.trim().toUpperCase()
+  const destination = searchForm.value.toCode || searchForm.value.to.trim().toUpperCase()
 
   searchError.value = ''
   expiredBanner.value = false
   if (origin.length !== 3 || destination.length !== 3) {
     searched.value = true
     results.value = []
-    searchError.value = 'يرجى إدخال رمز مطار صحيح مكوّن من 3 أحرف لكل من نقطة الانطلاق والوصول (مثال: CAI)'
+    searchError.value = 'يرجى اختيار مطار من القائمة لكل من نقطة الانطلاق والوصول'
     return
   }
   if (origin === destination) {
@@ -929,9 +938,19 @@ const closeBooking = () => {
   bookingModal.value.open = false
 }
 
+const isLatinOnly = (str) => /^[a-zA-Z\s\-'.]+$/.test(str)
+
 const submitBooking = async () => {
   const r = bookingModal.value.result
   bookingModal.value.error = ''
+
+  for (let i = 0; i < bookingForm.value.passengers.length; i++) {
+    const p = bookingForm.value.passengers[i]
+    if (!isLatinOnly(p.given_name) || !isLatinOnly(p.family_name)) {
+      bookingModal.value.error = `يرجى كتابة اسم المسافر ${i + 1} بالأحرف الإنجليزية كما في جواز السفر`
+      return
+    }
+  }
 
   // If the offer requires identity documents, validate before hitting the API.
   if (bookingModal.value.passportRequired) {
@@ -1005,7 +1024,9 @@ const submitBooking = async () => {
       await onSearch()
       bookingModal.value.open = false
     } else {
-      bookingModal.value.error = err.response?.data?.message ?? 'فشل الحجز، يرجى المحاولة مرة أخرى'
+      const data = err.response?.data
+      const firstValidationError = data?.errors ? Object.values(data.errors).flat()[0] : null
+      bookingModal.value.error = firstValidationError || data?.message || 'فشل الحجز، يرجى المحاولة مرة أخرى'
     }
   } finally {
     bookingModal.value.loading = false

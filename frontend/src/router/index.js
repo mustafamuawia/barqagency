@@ -4,8 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 const routes = [
   {
     path: '/',
-    component: () => import('@/views/LandingPage.vue'),
-    meta: { requireRole: 'agency' },
+    redirect: '/agency',
   },
   {
     path: '/login',
@@ -54,11 +53,17 @@ const routes = [
   },
   {
     path: '/agency',
+    name: 'agency.home',
+    component: () => import('@/views/LandingPage.vue'),
+    meta: { requireRole: 'agency' },
+  },
+  {
+    path: '/agency',
     component: () => import('@/layouts/AgencyLayout.vue'),
     meta: { requireRole: 'agency' },
     children: [
       { path: 'pending', name: 'agency.pending', component: () => import('@/views/agency/AccountPending.vue') },
-      { path: '', name: 'agency.dashboard', component: () => import('@/views/agency/Dashboard.vue') },
+      { path: 'dashboard', name: 'agency.dashboard', component: () => import('@/views/agency/Dashboard.vue') },
       { path: 'orders', name: 'agency.orders', component: () => import('@/views/agency/OrderList.vue') },
       { path: 'orders/new', name: 'agency.orders.new', component: () => import('@/views/agency/OrderForm.vue') },
       { path: 'orders/:id', name: 'agency.orders.show', component: () => import('@/views/agency/OrderDetail.vue'), props: true },
@@ -73,7 +78,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
 
@@ -87,7 +92,7 @@ router.beforeEach(async (to) => {
   if (to.meta.guestOnly && auth.isAuthenticated) {
     if (auth.isAdmin) return { path: '/admin' }
     if (auth.isAgency) return { path: '/agency' }
-    return { path: '/' }
+    return { path: '/agency' }
   }
 
   if (to.meta.public) {

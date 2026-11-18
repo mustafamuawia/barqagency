@@ -40,6 +40,36 @@ class BookDuffelOfferRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'offer_id.required' => 'معرّف العرض مطلوب',
+            'passengers.required' => 'بيانات المسافرين مطلوبة',
+            'passengers.min' => 'يجب إضافة مسافر واحد على الأقل',
+            'passengers.*.duffel_passenger_id.required' => 'معرّف المسافر مطلوب',
+            'passengers.*.title.required' => 'اللقب مطلوب',
+            'passengers.*.title.in' => 'اللقب غير صالح',
+            'passengers.*.given_name.required' => 'الاسم الأول مطلوب',
+            'passengers.*.given_name.max' => 'الاسم الأول طويل جداً',
+            'passengers.*.family_name.required' => 'اسم العائلة مطلوب',
+            'passengers.*.family_name.max' => 'اسم العائلة طويل جداً',
+            'passengers.*.born_on.required' => 'تاريخ الميلاد مطلوب',
+            'passengers.*.born_on.date_format' => 'صيغة تاريخ الميلاد غير صحيحة',
+            'passengers.*.email.required' => 'البريد الإلكتروني مطلوب',
+            'passengers.*.email.email' => 'البريد الإلكتروني غير صالح',
+            'passengers.*.phone_number.required' => 'رقم الهاتف مطلوب',
+            'passengers.*.gender.required' => 'الجنس مطلوب',
+            'passengers.*.gender.in' => 'الجنس غير صالح',
+            'passengers.*.duffel_type.in' => 'نوع المسافر غير صالح',
+            'passengers.*.identity_documents.*.type.required_with' => 'نوع وثيقة الهوية مطلوب',
+            'passengers.*.identity_documents.*.unique_identifier.required_with' => 'رقم وثيقة الهوية مطلوب',
+            'passengers.*.identity_documents.*.expires_on.required_with' => 'تاريخ انتهاء وثيقة الهوية مطلوب',
+            'passengers.*.identity_documents.*.expires_on.date_format' => 'صيغة تاريخ انتهاء وثيقة الهوية غير صحيحة',
+            'passengers.*.identity_documents.*.issuing_country_code.required_with' => 'دولة إصدار وثيقة الهوية مطلوبة',
+            'passengers.*.identity_documents.*.issuing_country_code.size' => 'رمز دولة الإصدار يجب أن يكون حرفين',
+        ];
+    }
+
     /**
      * After the structural rules pass, enforce identity-document requirements
      * from the server-side offer cache. We never trust a client-supplied boolean

@@ -78,7 +78,7 @@ class DuffelClient
                 throw new DuffelOfferExpiredException();
             }
 
-            throw new \RuntimeException($response->json('errors.0.message') ?? 'Duffel booking failed');
+            throw new \RuntimeException($this->translateDuffelError($response->json('errors') ?? []));
         }
 
         return $response->json('data') ?? [];
@@ -98,7 +98,7 @@ class DuffelClient
 
         if ($response->failed()) {
             Log::warning('Duffel get order failed', ['status' => $response->status(), 'body' => $response->body()]);
-            throw new \RuntimeException($response->json('errors.0.message') ?? 'Failed to fetch Duffel order');
+            throw new \RuntimeException('تعذر جلب بيانات الحجز من Duffel');
         }
 
         return $response->json('data') ?? [];
@@ -120,7 +120,7 @@ class DuffelClient
 
         if ($createResponse->failed()) {
             Log::warning('Duffel cancel order failed', ['status' => $createResponse->status(), 'body' => $createResponse->body()]);
-            throw new \RuntimeException($createResponse->json('errors.0.message') ?? 'Duffel cancellation failed');
+            throw new \RuntimeException('فشل إلغاء الحجز عبر Duffel');
         }
 
         $cancellationId = $createResponse->json('data.id');
@@ -137,7 +137,7 @@ class DuffelClient
 
         if ($confirmResponse->failed()) {
             Log::warning('Duffel cancel confirm failed', ['status' => $confirmResponse->status(), 'body' => $confirmResponse->body()]);
-            throw new \RuntimeException($confirmResponse->json('errors.0.message') ?? 'Duffel cancellation confirm failed');
+            throw new \RuntimeException('فشل تأكيد إلغاء الحجز عبر Duffel');
         }
 
         return $confirmResponse->json('data') ?? [];
@@ -178,5 +178,55 @@ class DuffelClient
     private function baseUrl(): string
     {
         return config('services.duffel.base_url', 'https://api.duffel.com');
+    }
+
+    private function translateDuffelError(array $errors): string
+    {
+        if (empty($errors)) {
+            return 'فشل الحجز، يرجى المحاولة مرة أخرى';
+        }
+
+        $fieldNames = [
+            'born_on'               => 'تاريخ الميلاد',
+            'given_name'            => 'الاسم الأول',
+            'family_name'           => 'اسم العائلة',
+            'email'                 => 'البريد الإلكتروني',
+            'phone_number'          => 'رقم الهاتف',
+            'title'                 => 'اللقب',
+            'gender'                => 'الجنس',
+            'expires_on'            => 'تاريخ انتهاء جواز السفر',
+            'unique_identifier'     => 'رقم جواز السفر',
+            'issuing_country_code'  => 'دولة الإصدار',
+        ];
+
+        $translated = [];
+
+        foreach ($errors as $error) {
+            $msg = $error['message'] ?? '';
+
+            if (preg_match("/Field '(\w+)' must be on or before (.+)/", $msg, $m)) {
+                $field = $fieldNames[$m[1]] ?? $m[1];
+                $translated[] = "يجب أن يكون {$field} في أو قبل {$m[2]}";
+            } elseif (preg_match("/Field '(\w+)' must be on or after (.+)/", $msg, $m)) {
+                $field = $fieldNames[$m[1]] ?? $m[1];
+                $translated[] = "يجب أن يكون {$field} في أو بعد {$m[2]}";
+            } elseif (preg_match("/Field '(\w+)' has invalid format/", $msg, $m)) {
+                $field = $fieldNames[$m[1]] ?? $m[1];
+                $translated[] = "صيغة {$field} غير صحيحة";
+            } elseif (preg_match("/Field '(\w+)' must be a valid (.+)/", $msg, $m)) {
+                $field = $fieldNames[$m[1]] ?? $m[1];
+                $translated[] = "يجب أن يكون {$field} صالحاً";
+            } elseif (preg_match("/Field '(\w+)' is required/", $msg, $m)) {
+                $field = $fieldNames[$m[1]] ?? $m[1];
+                $translated[] = "{$field} مطلوب";
+            } elseif (preg_match("/Field '(\w+)'/", $msg, $m)) {
+                $field = $fieldNames[$m[1]] ?? $m[1];
+                $translated[] = "خطأ في حقل {$field}";
+            } else {
+                $translated[] = 'فشل الحجز، يرجى المحاولة مرة أخرى';
+            }
+        }
+
+        return implode(' | ', array_unique($translated));
     }
 }
